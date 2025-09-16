@@ -1,16 +1,60 @@
-# doodle_note
 
-A new Flutter project.
+# DoodleNote
 
-## Getting Started
+DoodleNote es una aplicacion desarollada en Flutter, la cual tiene como objetivo el poder almacenar informacion, imagenes, ademas de poder organizarlas
 
-This project is a starting point for a Flutter application.
+- A brief description of what this project does and who it's for
 
-A few resources to get you started if this is your first Flutter project:
+## Caracteristicas
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+#### Caracteristicas Funcionales
+- El programa permite al usuario poder crear bloques de not
+- El usuario puede crear en la aplicacion pestañas para poder seccionar partes del texto
+- Permite al usuario ingresar imagenes
+- Permite al usuario poner tags para que sea mas 
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+#### Caracteristicas NO Funcionales
+- Poder Customizar 
+
+## Pila de Tecnologia
+SDK de Flutter
+
+//HACER COMMIT
+
+```mermaid
+flowchart TD
+    Home[Home]
+    Page[Portada]
+    Edit[Edicion]
+    Create[Crear]
+    Search[Buscar]
+    Delete[Eliminar]
+
+    P(Apretar Portada)
+    E(Apretar Editar)
+    C(Apretar Crear)
+    S(Apretar Buscar)
+    D(Apretar Eliminar)
+
+
+    Home --> P
+    P --> Page
+
+    Home --> C
+    C --> Create
+    Create --> Edit
+
+    Page --> E
+    E --> Edit
+
+    Home --> S
+    S --> Search
+
+    Search --> P
+
+    Page --> D
+    D --> Delete
+
+    Delete --> Home
+```
+
