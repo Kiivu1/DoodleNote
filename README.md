@@ -36,25 +36,15 @@ flowchart TD
     S(Apretar Buscar)
     D(Apretar Eliminar)
 
-
-    Home --> P
-    P --> Page
-
-    Home --> C
-    C --> Create
+    Home <--> S <--> Search
+    Search --> Page
+    Home --> C --> Create
     Create --> Edit
-
-    Page --> E
-    E --> Edit
-
-    Home --> S
-    S --> Search
-
-    Search --> P
-
-    Page --> D
-    D --> Delete
-
+    Home <--> P <--> Page
+    Page --> E --> Edit
+    Page <--> D <--> Delete
     Delete --> Home
+
+    Edit --> Page
 ```
 
