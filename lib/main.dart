@@ -1,7 +1,7 @@
-import 'package:DoodleNote/pages/home.dart';
-import 'package:DoodleNote/pages/page.dart';
-import 'package:DoodleNote/pages/edit.dart';
-import 'package:DoodleNote/pages/search.dart';
+import 'package:doodle_note/pages/home.dart';
+import 'package:doodle_note/pages/page.dart';
+import 'package:doodle_note/pages/edit.dart';
+import 'package:doodle_note/pages/search.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
@@ -9,30 +9,6 @@ void main() {
   runApp(const MyApp());
 }
 
-
-/*
-  //ARREGLAR NAVEGACION
-
-  NAVEGACION
-  
-
-  PAGINAS POR HACER
-
-  HOME
-
-  PAGE
-  - Ttile card
-  - Tag List
-
-  (_25%) SEARCH
-  (__0%) OPTIONS
-
-  PAGE:
-  - Lista de Tags
-    - Usar chips dentro de un tag
-  - Mejorar presentacion
-
-*/
 
 
 class MyApp extends StatelessWidget {

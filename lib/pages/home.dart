@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:DoodleNote/pages/page.dart';
-import 'package:DoodleNote/pages/search.dart';
-import 'package:DoodleNote/pages/edit.dart';
+import 'package:doodle_note/pages/page.dart';
+import 'package:doodle_note/pages/search.dart';
+import 'package:doodle_note/pages/edit.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});

@@ -1,7 +1,5 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
-import 'package:DoodleNote/pages/edit.dart';
+import 'package:doodle_note/pages/edit.dart';
 
 //COSAS POR HACER:
 // - CONVERTIRLO A UN STATEFUL WIDGET
@@ -31,6 +29,25 @@ class _NotePageScreen extends State<NotePageScreen>{
     Navigator.pop(context);
   }
 
+  //Lista de tags que estan dentro de un CHIP
+  Widget _tagList(List<String> tags){
+    return Padding(padding: EdgeInsets.all(6),
+      child: Wrap(
+        spacing: 8.0,
+        runSpacing: 4.0,
+        alignment: WrapAlignment.center,
+        children: tags.map((tag) => Chip(
+          label: Text(tag),
+          backgroundColor: Colors.purple[200],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        )).toList(),
+      ),
+      // contenido
+    );
+  }
+
   void _showDialog(){
     showDialog(
       context: context,
@@ -55,11 +72,11 @@ class _NotePageScreen extends State<NotePageScreen>{
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          FloatingActionButton( onPressed: _showDialog, tooltip: 'Borrar', child: const Icon(Icons.delete), heroTag: 'BtnDelNote',),
+          FloatingActionButton( onPressed: _showDialog, tooltip: 'Borrar',  heroTag: 'BtnDelNote', child: const Icon(Icons.delete),),
           SizedBox(width: 10),
           Expanded( child: FloatingActionButton.extended(onPressed: _goToEdit, label: Text('Editar'), icon: Icon(Icons.edit), heroTag: 'BtnEdtNote',) ),
           SizedBox(width: 10),
-          FloatingActionButton( onPressed: null, tooltip: 'Compartir', child: const Icon(Icons.share), heroTag: 'BtnShrNote',),
+          FloatingActionButton( onPressed: null, tooltip: 'Compartir',  heroTag: 'BtnShrNote', child: const Icon(Icons.share),),
         ]
       );
   }
@@ -91,21 +108,29 @@ class _NotePageScreen extends State<NotePageScreen>{
 
   //refactor, titulo de la nota
   Widget _titleContent(imagePath, title){
-    return Row(
-      children: [
-        Container(width: 45, height: 45,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.white, width: 2),
-            borderRadius: BorderRadius.circular(10),
+    return Padding(padding: EdgeInsets.all(6),
+      child: Card(
+        margin: EdgeInsets.all(6),
+        color: const Color.fromARGB(255, 194, 175, 238),
+        child: Padding(padding: EdgeInsets.all(6),
+          child: Row(
+            children: [
+              Container(width: 45, height: 45,
+                decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white, width: 2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child:ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(imagePath, fit: BoxFit.cover)
+                  )
+              ),
+              SizedBox(width: 6),
+              Expanded(child: Text(title, style: const TextStyle(fontSize: 20, color: Colors.black))), //texto
+            ]
           ),
-          child:ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(imagePath, fit: BoxFit.cover)
-          )
         ),
-        SizedBox(width: 6),
-        Expanded(child: Text(title, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 20, color: Colors.black))), //texto
-      ]
+      )
     );
   }
 
@@ -123,12 +148,20 @@ class _NotePageScreen extends State<NotePageScreen>{
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return <Widget>[
               SliverAppBar(
-                title: _titleContent('assets/images/spr_Test.png', 'Doodle Note: Placeholder'),
+                //title: _titleContent('assets/images/spr_Test.png', 'Doodle Note: Placeholder'),
                 floating: false,
                 pinned: false,
                 expandedHeight: 300,
                 backgroundColor: Colors.deepPurple,
                 flexibleSpace: FlexibleSpaceBar(
+                  background: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _titleContent('assets/images/spr_Test.png', 'Doodle Note: Placeholder Long Title'),
+                      SizedBox(height: 20),
+                      _tagList(['Tag 1', 'Tag2', 'Tag 3', 'Tag 4', 'Tag 5', 'Tag 6'])
+                    ],
+                  ),
 
                 ),
                 bottom: const TabBar(

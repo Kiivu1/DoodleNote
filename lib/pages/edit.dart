@@ -34,6 +34,34 @@ class _EditPage extends State<EditPage>{
     );
   }
 
+
+  SliverToBoxAdapter _noteMainTitle(title){
+    return SliverToBoxAdapter(
+      child: Padding(padding: const EdgeInsets.all(3),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            color: const Color.fromARGB(255, 224, 85, 88),
+            child: Card(
+              shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(6), ),
+              child: Padding(
+                padding: const EdgeInsets.all(8), // Slightly more padding
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Expanded( child: Text( title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),maxLines: 10, overflow: TextOverflow.ellipsis, ), ),
+                    SizedBox(width: 8),
+                    Icon(Icons.document_scanner),
+                  ],
+                ),
+              ),
+            )
+          )
+        )
+      )
+    );
+  }
+
   //Refactor: title and button
   Card _tabTitle(String title) {
     return Card(
@@ -43,7 +71,7 @@ class _EditPage extends State<EditPage>{
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            FloatingActionButton( onPressed: null, tooltip: 'Delete Tab', child: Icon(Icons.delete), heroTag: Object(),),
+            FloatingActionButton( onPressed: null, tooltip: 'Delete Tab', heroTag: Object(), child: Icon(Icons.delete)),
             SizedBox(width: 16),
             Expanded( child: Text( title, style: TextStyle(fontSize: _fontSizeTitle, fontWeight: FontWeight.bold),maxLines: 10, overflow: TextOverflow.ellipsis, ), ),
             SizedBox(width: 8),
@@ -102,7 +130,7 @@ class _EditPage extends State<EditPage>{
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    FloatingActionButton( onPressed: null, tooltip: 'Delete Tab', child: Icon(Icons.delete), heroTag: Object(),),
+                    FloatingActionButton( onPressed: null, tooltip: 'Delete Tab',  heroTag: Object(), child: Icon(Icons.delete),),
                     SizedBox(width: 8),
                     Expanded( child: Text( tag, style: TextStyle(fontSize: _fontSizeTag, fontWeight: FontWeight.bold),maxLines: 10, overflow: TextOverflow.ellipsis, ), ),
                     SizedBox(width: 8),
@@ -126,7 +154,7 @@ class _EditPage extends State<EditPage>{
         SizedBox(width: 5),
         Expanded(child: FloatingActionButton.extended(onPressed: null, label: Text('Add Tab'), icon: Icon(Icons.add), heroTag: 'BtnAddTab',)),
         SizedBox(width: 5),
-        FloatingActionButton(onPressed: _showDialog, tooltip: 'Save', child: const Icon(Icons.save), heroTag: 'BtnSaveNote',)
+        FloatingActionButton(onPressed: _showDialog, tooltip: 'Save', heroTag: 'BtnSaveNote', child: const Icon(Icons.save))
       ]
     );
   }
@@ -183,6 +211,7 @@ class _EditPage extends State<EditPage>{
             title: Row( children: [Icon(Icons.edit), SizedBox(width: 6), Text('Editing Page')]), //Titulo
           ),
           _topIcon('assets/images/spr_Test.png'),
+          _noteMainTitle('Titulo de la nota'),
           _tagsContent('Tag Uno'),
           _tagsContent('Tag Dos'),
           _tagsContent('Tag Tres'),
