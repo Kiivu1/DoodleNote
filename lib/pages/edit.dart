@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:doodle_note/models/listNotes.dart';
 
 class EditPage extends StatefulWidget{
   const EditPage({super.key});
@@ -15,6 +16,11 @@ class _EditPage extends State<EditPage>{
   //Debug Text
   final String debugText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse pulvinar augue et nisl varius ullamcorper. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ac lacus leo. Sed sit amet sagittis nibh, at lacinia tortor. Pellentesque porta, purus vehicula viverra congue, mauris augue pulvinar enim, sed dapibus metus neque at risus. Sed eleifend luctus magna at dictum. Pellentesque eget ex interdum, tristique diam vel, dictum lacus. Pellentesque viverra viverra tincidunt. Aliquam tortor nulla, auctor a odio et, dictum lobortis metus. In et dui non libero vehicula fringilla eget ut nibh. Aliquam fringilla blandit risus eget varius. Praesent id dapibus nisl. Sed sagittis lectus non feugiat molestie. Aenean ullamcorper mi diam. Sed augue nisi, eleifend non pulvinar nec, molestie sed tellus. Duis rutrum maximus finibus. Nulla sed dolor scelerisque, placerat nibh ultrices, pulvinar ante. Maecenas faucibus ante quis sapien ullamcorper finibus. Mauris et dolor a enim tempus bibendum. Cras eu cursus massa. Duis a ultricies risus. In hac habitasse platea dictumst. Nunc facilisis urna orci, eu dictum arcu sodales ut. Integer molestie tincidunt aliquet. Vivamus rhoncus nec lacus eget imperdiet. In ac pulvinar ipsum, nec feugiat leo. Vivamus id consequat erat, at faucibus dui. Ut dolor sapien, tempor ut risus at, scelerisque pretium quam. Sed et nibh quis urna hendrerit ornare. Cras id scelerisque neque. Nullam at varius tortor. Sed id mauris sit amet ligula commodo condimentum. Donec nec molestie risus, a vehicula ante. Integer sed erat mi. Curabitur condimentum nibh ut convallis ultricies. Nam et interdum lacus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed consectetur, nulla vulputate posuere viverra, libero ex viverra eros, non viverra velit tellus ac felis. Aenean ultricies dui sed nisi fringilla, a ultricies ipsum cursus. Vestibulum sit amet sem enim. Quisque varius vestibulum dolor, ut placerat nibh euismod in. Aliquam sit amet mauris ante. Mauris in nisi nisi.  Nulla tristique ante enim, et eleifend nunc rutrum in. Nullam metus lorem, sollicitudin eget arcu a, tristique varius libero. Donec pharetra, ante a malesuada tincidunt, nisl ligula consectetur libero, in volutpat est augue sed sem. Duis suscipit justo purus, ac accumsan dolor pellentesque eget. Donec imperdiet scelerisque faucibus. Integer elementum augue et massa gravida, nec sodales metus dictum. Donec et semper massa.';
 
+  void _goBackTwice(){
+    Navigator.pop(context);
+    Navigator.pop(context);
+  }
+
   //giardar dialogo
   void _showDialog(){
     showDialog(
@@ -25,7 +31,7 @@ class _EditPage extends State<EditPage>{
           title: const Text('Save Progress?'),
           content: const Text('Want to save this Note?'),
           actions: <Widget>[
-            TextButton(onPressed: null, child: Text('Save')),
+            TextButton(onPressed: _goBackTwice, child: Text('Save')),
             TextButton(onPressed: (){ Navigator.of(context).pop(); } 
             , child: Text('Cancel'))
           ],
@@ -103,6 +109,7 @@ class _EditPage extends State<EditPage>{
           child: Container(
             color: Colors.deepPurple[200],
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _tabTitle(title),
                 SizedBox(),
@@ -208,15 +215,21 @@ class _EditPage extends State<EditPage>{
         slivers: [
           SliverAppBar(                   //PARTE SUPERIOR DEL WIDGET
             backgroundColor: Colors.deepPurple,
-            title: Row( children: [Icon(Icons.edit), SizedBox(width: 6), Text('Editing Page')]), //Titulo
+            title: Row( children: [
+              Image.asset('assets/images/DNLogo_Edit.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
+              Expanded(child: Text('Editing', style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
+            ]), //Titulo
           ),
-          _topIcon('assets/images/spr_Test.png'),
-          _noteMainTitle('Titulo de la nota'),
-          _tagsContent('Tag Uno'),
-          _tagsContent('Tag Dos'),
-          _tagsContent('Tag Tres'),
-          _tabContent('Texto uno wow mira que tan largo es el texto wows wows wows wows wows wos', debugText),
-          _tabContent('Titulo 2', debugText),
+          _topIcon(notaDebug.imagePath),
+          _noteMainTitle(notaDebug.noteTitle),
+          _tagsContent(notaDebug.tags?[0] ?? ''),
+          _tagsContent(notaDebug.tags?[1] ?? ''),
+          _tagsContent(notaDebug.tags?[2] ?? ''),
+          _tagsContent(notaDebug.tags?[3] ?? ''),
+          _tagsContent(notaDebug.tags?[4] ?? ''),
+          _tagsContent(notaDebug.tags?[5] ?? ''),
+          _tabContent(notaDebug.tabs?[0].title ?? '', notaDebug.tabs?[0].body ?? ''),
+          _tabContent(notaDebug.tabs?[1].title ?? '', notaDebug.tabs?[1].body ?? ''),
         ]
       ),
       bottomNavigationBar: BottomAppBar( color: Colors.deepPurple, child: _footerButtons(), ),

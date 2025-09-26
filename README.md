@@ -1,50 +1,52 @@
 
 # DoodleNote
 
-DoodleNote es una aplicacion desarollada en Flutter, la cual tiene como objetivo el poder almacenar informacion, imagenes, ademas de poder organizarlas
+"DoodleNote, the app where you write down on notes, the doodles of your thoughts"
 
-- A brief description of what this project does and who it's for
+DoodleNote es una aplicacion de notas, movil, la cual tiene como objetivo el poder facilitar la organizacion y la perzonalizacion de estas.
 
+Como mayor atractivo tiene el poder estructurar la nota mediante pestañas, partiendo la informacion necesaria. Aparte de eso permite la inclusion de Tags, los cuales permiten identificar las notas de manera rapida. Por ultimo tambien esta la capacidad de añadir una imagen a la nota de por si.
 ## Caracteristicas
 
-#### Caracteristicas Funcionales
-- El programa permite al usuario poder crear bloques de not
-- El usuario puede crear en la aplicacion pestañas para poder seccionar partes del texto
-- Permite al usuario ingresar imagenes
-- Permite al usuario poner tags para que sea mas 
-
-#### Caracteristicas NO Funcionales
-- Poder Customizar 
-
+- Habilidad de editar, guardar y crear notas de texto.
+- El usuario puede crear secciones dentro de la nota mediante pestañas, permitiendo un mayor control e informacion en este.
+- Habilidad de crear etiquetas, o *tags*, que permiten mayor perzonalizacion/filtracion.
+- Poder asignar un icono/imagen a la nota. Desde la camara o el album de fotos.
+- Pagina de busqueda para filtrar notas.
+- Modo de Lectura de la nota.
+- Modo de edicion de la nota.
 ## Pila de Tecnologia
-SDK de Flutter
 
-//HACER COMMIT
+- SDK de flutter
+- flutter_lints
+- logger
+- cupertino_icons
+- flutter_launcher_icons: 
+- flutter_native_splash
 
+## Diagrama de Flujo
 ```mermaid
 flowchart TD
-    Home[Home]
-    Page[Portada]
-    Edit[Edicion]
-    Create[Crear]
-    Search[Buscar]
-    Delete[Eliminar]
+    Home[fa:fa-home Home Page]
+    NotePage[fa:fa-file Note Page]
+    NoteEditor[fa:fa-pencil Note Editor]
+    SearchPage[fa:fa-search Search Page]
 
-    P(Apretar Portada)
-    E(Apretar Editar)
-    C(Apretar Crear)
-    S(Apretar Buscar)
-    D(Apretar Eliminar)
+    Act{fa:fa-user ¿Que quiero hacer?}
+    Act2{fa:fa-user ¿Quiero eliminarla?}
+    Act3{fa:fa-user ¿Guardo la nota?}
+    Act4{fa:fa-user ¿Edito la nota?}
 
-    Home <--> S <--> Search
-    Search --> Page
-    Home --> C --> Create
-    Create --> Edit
-    Home <--> P <--> Page
-    Page --> E --> Edit
-    Page <--> D <--> Delete
-    Delete --> Home
+    Home --> Act
+    Act --> |Buscar una Nota| SearchPage
+    Act --> |Leer una Nota| Y(Apretar una Nota) --> NotePage
+    Act --> |Crear una Nota| R(Apretar crear una nota) --> NoteEditor
 
-    Edit --> Page
+    SearchPage --> U(Apretar nota filtrada) --> NotePage
+    NotePage --> Act4 --> |Si| I(Apretar editar) -->NoteEditor
+    NoteEditor --> Act3
+    Act3 --> |Si| Q(Apretar guardar cambios) --> NotePage
+
+    NotePage --> Act2 --> |Si| D(Apretar eliminar nota) --> Home & SearchPage
 ```
 

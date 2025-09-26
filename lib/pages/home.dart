@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:doodle_note/pages/page.dart';
 import 'package:doodle_note/pages/search.dart';
 import 'package:doodle_note/pages/edit.dart';
+import 'package:doodle_note/models/listNotes.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -72,28 +73,27 @@ class _MyHomePageState extends State<MyHomePage> {
             title:Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Image.asset('assets/icons/DoodleNoteWhite.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
+                Image.asset('assets/images/DNLogo_Home.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
                 Expanded(child: Text('DoodleNote', style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
                 SizedBox(width: 1),
                 ElevatedButton(onPressed: _goToSearch, child: Row( children: [ Icon(Icons.search), Text('Search')]))
               ]
             )
           ),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #1', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #2', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #3', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #4', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #5', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #6', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #7', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #8', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #9', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #10', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #11', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #12', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #13', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #14', '21/09/2025'),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #15', '21/09/2025'),
+          _noteContent(notaDebug.imagePath, notaDebug.noteTitle, notaDebug.creationDate),
+          _noteContent(noteA.imagePath, noteA.noteTitle, noteA.creationDate),
+          _noteContent(noteB.imagePath, noteB.noteTitle, noteB.creationDate),
+          _noteContent(noteC.imagePath, noteC.noteTitle, noteC.creationDate),
+          _noteContent(noteD.imagePath, noteD.noteTitle, noteD.creationDate),
+          _noteContent(noteE.imagePath, noteE.noteTitle, noteE.creationDate),
+          _noteContent(noteF.imagePath, noteF.noteTitle, noteF.creationDate),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #1', '21/09/2025'),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #2', '21/09/2025'),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #3', '21/09/2025'),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #4', '21/09/2025'),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #5', '21/09/2025'),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #6', '21/09/2025'),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #7', '21/09/2025'),
         ],
       ),
       floatingActionButton: FloatingActionButton(onPressed: _goToEdit, tooltip: 'Create Note', child: Icon(Icons.add)),

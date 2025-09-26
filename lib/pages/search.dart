@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:doodle_note/pages/page.dart';
+import 'package:doodle_note/models/listNotes.dart';
+import 'package:logger/logger.dart';
+
 
 class SearchPage extends StatefulWidget{
   const SearchPage({super.key});
@@ -8,10 +11,10 @@ class SearchPage extends StatefulWidget{
   State<SearchPage> createState() => _SearchPage();
 }
 
-
-
 class _SearchPage extends State<SearchPage>{
   String _searchText = '';
+
+  
 
   void _goToPage(){
     Navigator.push( context, MaterialPageRoute(builder: (context) => NotePageScreen()), );
@@ -59,6 +62,7 @@ class _SearchPage extends State<SearchPage>{
       child: Row(
         children: tags.map((tag) => Padding(padding: EdgeInsets.only(right: 6),
             child: Chip(
+              avatar: Icon(Icons.tag, color: Colors.black,),
               label: Text(tag, style: TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold),),
               backgroundColor: const Color.fromARGB(255, 184, 53, 108),
               shape: RoundedRectangleBorder(
@@ -100,6 +104,10 @@ class _SearchPage extends State<SearchPage>{
 
   @override
   Widget build(BuildContext context){
+
+    var logger = Logger();
+    logger.d("build compiladp");
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 57, 29, 82),
       appBar: AppBar(
@@ -107,7 +115,7 @@ class _SearchPage extends State<SearchPage>{
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Image.asset('assets/icons/DNSearchLogo.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
+            Image.asset('assets/images/DNSearchLogo.png', fit: BoxFit.cover, height: 40),
             Expanded(child: Text('Search', style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
           ]
         )
@@ -115,13 +123,20 @@ class _SearchPage extends State<SearchPage>{
       body: CustomScrollView(
         slivers: [
           _searchBarSliver(),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #1', '21/09/2025', ['Tag 1','Tag 2','Tag 3']),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #2', '21/09/2025', ['Tag 1','Tag 2','Tag 3','Tag 4','Tag 5','Tag 6']),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #3', '21/09/2025', ['Tag 1','Tag 2','Tag 3']),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #4', '21/09/2025', ['Tag 1','Tag 2','Tag 3', 'Tag 4', 'Tag 5', 'Tag 6', 'Tag 7', 'Tag 8', 'Tag 9']),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #5', '21/09/2025', ['Tag 1','Tag 2','Tag 3','Tag 4']),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #6', '21/09/2025', ['Tag 1','Tag 2','Tag 3']),
-          _noteContent('assets/images/spr_Test.png', 'Doodle Note #7', '21/09/2025', ['Tag 1','Tag 2','Tag 3','Tag 4', 'Tag 5']),
+          _noteContent(notaDebug.imagePath, notaDebug.noteTitle, notaDebug.creationDate, [...?notaDebug.tags]),
+          _noteContent(noteA.imagePath, noteA.noteTitle, noteA.creationDate, [...?noteA.tags]),
+          _noteContent(noteB.imagePath, noteB.noteTitle, noteB.creationDate, [...?noteB.tags]),
+          _noteContent(noteC.imagePath, noteC.noteTitle, noteC.creationDate, [...?noteC.tags]),
+          _noteContent(noteD.imagePath, noteD.noteTitle, noteD.creationDate, [...?noteD.tags]),
+          _noteContent(noteE.imagePath, noteE.noteTitle, noteE.creationDate, [...?noteE.tags]),
+          _noteContent(noteF.imagePath, noteF.noteTitle, noteF.creationDate, [...?noteF.tags]),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #1', '21/09/2025', ['Tag 1','Tag 2','Tag 3']),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #2', '21/09/2025', ['Tag 1','Tag 2','Tag 3','Tag 4','Tag 5','Tag 6']),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #3', '21/09/2025', ['Tag 1','Tag 2','Tag 3']),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #4', '21/09/2025', ['Tag 1','Tag 2','Tag 3', 'Tag 4', 'Tag 5', 'Tag 6', 'Tag 7', 'Tag 8', 'Tag 9']),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #5', '21/09/2025', ['Tag 1','Tag 2','Tag 3','Tag 4']),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #6', '21/09/2025', ['Tag 1','Tag 2','Tag 3']),
+          _noteContent('assets/images/DNImage1.png', 'Doodle Note #7', '21/09/2025', ['Tag 1','Tag 2','Tag 3','Tag 4', 'Tag 5']),
         ],
       ) 
     );

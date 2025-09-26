@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:doodle_note/pages/edit.dart';
+import 'package:doodle_note/models/listNotes.dart';
 
 //COSAS POR HACER:
 // - CONVERTIRLO A UN STATEFUL WIDGET
@@ -37,6 +38,7 @@ class _NotePageScreen extends State<NotePageScreen>{
         runSpacing: 4.0,
         alignment: WrapAlignment.center,
         children: tags.map((tag) => Chip(
+          avatar: Icon( Icons.tag),
           label: Text(tag),
           backgroundColor: Colors.purple[200],
           shape: RoundedRectangleBorder(
@@ -148,7 +150,13 @@ class _NotePageScreen extends State<NotePageScreen>{
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return <Widget>[
               SliverAppBar(
-                //title: _titleContent('assets/images/spr_Test.png', 'Doodle Note: Placeholder'),
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Image.asset('assets/images/DNLogo_Page.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
+                    Expanded(child: Text('Search', style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
+                  ]
+                ),
                 floating: false,
                 pinned: false,
                 expandedHeight: 300,
@@ -157,17 +165,17 @@ class _NotePageScreen extends State<NotePageScreen>{
                   background: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _titleContent('assets/images/spr_Test.png', 'Doodle Note: Placeholder Long Title'),
+                      _titleContent(notaDebug.imagePath, notaDebug.noteTitle),
                       SizedBox(height: 20),
-                      _tagList(['Tag 1', 'Tag2', 'Tag 3', 'Tag 4', 'Tag 5', 'Tag 6'])
+                      _tagList([...?notaDebug.tags])
                     ],
                   ),
 
                 ),
-                bottom: const TabBar(
+                bottom: TabBar(
                   tabs: [
-                    Tab(child: Text('TAB 1', style: TextStyle(color: Colors.white))),
-                    Tab(child: Text('TAB 2', style: TextStyle(color: Colors.white))),
+                    Tab(child: Text(notaDebug.tabs?[0].title ?? '', overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white))),
+                    Tab(child: Text(notaDebug.tabs?[1].title ?? '', overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white))),
                   ]
                 ),
               ),
@@ -175,8 +183,8 @@ class _NotePageScreen extends State<NotePageScreen>{
           },
           body: TabBarView(
             children: <Widget>[
-              _noteContent('Tab 1 title', debugText),
-              _noteContent('Titulo 2: texto largo para ver el tamaño', debugText)
+              _noteContent(notaDebug.tabs?[0].title ?? '', notaDebug.tabs?[0].body ?? ''),
+              _noteContent(notaDebug.tabs?[1].title ?? '', notaDebug.tabs?[1].body ?? '')
             ] 
           ),
         ),
