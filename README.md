@@ -24,6 +24,9 @@ Como mayor atractivo tiene el poder estructurar la nota mediante pestañas, part
 - flutter_launcher_icons: 
 - flutter_native_splash
 
+## Link a video
+https://youtu.be/oRF-yLiLAKQ
+
 ## Diagrama de Flujo
 ```mermaid
 flowchart TD
