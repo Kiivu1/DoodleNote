@@ -1,0 +1,48 @@
+{
+    "uso": [
+        {
+            "pregunta": "¿Qué valor le darías a la aplicación en términos generales?",
+            "value": 3,
+            "min": "1: Insatisfactoria",
+            "max": "5: Excelente"
+        },
+        {
+            "pregunta": "¿Qué tan fácil te resultó usar la aplicación?",
+            "value": 3,
+            "min": "1: Muy difícil de usar",
+            "max": "5: Extremadamente intuitiva"
+        },
+        {
+            "pregunta": "¿En qué medida la aplicación cumplió con tus expectativas?",
+            "value": 3,
+            "min": "1: No cumplió",
+            "max": "5: Superó las expectativas"
+        },
+        {
+            "pregunta": "¿Cómo calificarías el diseño y la interfaz de usuario?",
+            "value": 3,
+            "min": "1: Pobre y confuso",
+            "max": "5: Moderno y atractivo"
+        }
+    ],
+    "opinion": [
+        {
+            "pregunta": "¿Qué fue lo que más te gustó o lo que consideras un punto fuerte de la aplicación?",
+            "respuesta": ""
+        },
+        {
+            "pregunta": "¿Qué aspectos crees que deberían mejorarse o no te gustaron (aspectos negativos)?",
+            "respuesta": ""
+        },
+        {
+            "pregunta": "¿Hay alguna función que esperabas encontrar y no estaba disponible?",
+            "respuesta": ""
+        }
+    ],
+    "veredicto": [
+        {
+            "pregunta": "En pocas palabras, ¿cuál es tu veredicto final sobre la aplicación? ¿La recomendarías y por qué?",
+            "respuesta": ""
+        }
+    ]
+}

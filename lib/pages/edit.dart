@@ -1,27 +1,408 @@
 import 'package:flutter/material.dart';
-import 'package:doodle_note/models/listNotes.dart';
+import 'package:doodle_note/models/notes.dart';
+import 'package:doodle_note/models/tab.dart';
+import 'package:provider/provider.dart';
+import 'package:doodle_note/providers/config_data.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:doodle_note/services/note_storage.dart';
 
 class EditPage extends StatefulWidget{
-  const EditPage({super.key});
+  const EditPage({super.key, required this.notaEdited});
+
+  final Note notaEdited;
 
   @override
   State<EditPage> createState() => _EditPage();
 }
 
-class _EditPage extends State<EditPage>{
+class _EditPage extends State<EditPage>{  
+  //CONFIGURATION DATA VAR
+  double get fontTitleSize => context.watch<ConfigurationData>().sizeFontTitle.toDouble();
+  double get fontTextSize => context.watch<ConfigurationData>().sizeFont.toDouble();
+  bool get imageVisible => context.watch<ConfigurationData>().showImage;
+  bool get dateVisible => context.watch<ConfigurationData>().showDate;
+  String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
 
-  //final double _fontSizeText = 14;
-  final double _fontSizeTitle = 14;
-  final double _fontSizeTag = 14;
-  //Debug Text
-  final String debugText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse pulvinar augue et nisl varius ullamcorper. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ac lacus leo. Sed sit amet sagittis nibh, at lacinia tortor. Pellentesque porta, purus vehicula viverra congue, mauris augue pulvinar enim, sed dapibus metus neque at risus. Sed eleifend luctus magna at dictum. Pellentesque eget ex interdum, tristique diam vel, dictum lacus. Pellentesque viverra viverra tincidunt. Aliquam tortor nulla, auctor a odio et, dictum lobortis metus. In et dui non libero vehicula fringilla eget ut nibh. Aliquam fringilla blandit risus eget varius. Praesent id dapibus nisl. Sed sagittis lectus non feugiat molestie. Aenean ullamcorper mi diam. Sed augue nisi, eleifend non pulvinar nec, molestie sed tellus. Duis rutrum maximus finibus. Nulla sed dolor scelerisque, placerat nibh ultrices, pulvinar ante. Maecenas faucibus ante quis sapien ullamcorper finibus. Mauris et dolor a enim tempus bibendum. Cras eu cursus massa. Duis a ultricies risus. In hac habitasse platea dictumst. Nunc facilisis urna orci, eu dictum arcu sodales ut. Integer molestie tincidunt aliquet. Vivamus rhoncus nec lacus eget imperdiet. In ac pulvinar ipsum, nec feugiat leo. Vivamus id consequat erat, at faucibus dui. Ut dolor sapien, tempor ut risus at, scelerisque pretium quam. Sed et nibh quis urna hendrerit ornare. Cras id scelerisque neque. Nullam at varius tortor. Sed id mauris sit amet ligula commodo condimentum. Donec nec molestie risus, a vehicula ante. Integer sed erat mi. Curabitur condimentum nibh ut convallis ultricies. Nam et interdum lacus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed consectetur, nulla vulputate posuere viverra, libero ex viverra eros, non viverra velit tellus ac felis. Aenean ultricies dui sed nisi fringilla, a ultricies ipsum cursus. Vestibulum sit amet sem enim. Quisque varius vestibulum dolor, ut placerat nibh euismod in. Aliquam sit amet mauris ante. Mauris in nisi nisi.  Nulla tristique ante enim, et eleifend nunc rutrum in. Nullam metus lorem, sollicitudin eget arcu a, tristique varius libero. Donec pharetra, ante a malesuada tincidunt, nisl ligula consectetur libero, in volutpat est augue sed sem. Duis suscipit justo purus, ac accumsan dolor pellentesque eget. Donec imperdiet scelerisque faucibus. Integer elementum augue et massa gravida, nec sodales metus dictum. Donec et semper massa.';
 
-  void _goBackTwice(){
+  late String _noteTitle;
+  late List<String> _tags;
+  late List<TabItem> _tabs;
+  String? _currentImagePath;
+
+  late TextEditingController _titleController;
+
+  final NoteStorage _storage = NoteStorage();
+
+  @override
+  void initState(){
+    super.initState();
+    _noteTitle = widget.notaEdited.noteTitle;
+    _tags = widget.notaEdited.tags ?? [];
+    _tabs = widget.notaEdited.tabs ?? [];
+    _currentImagePath = widget.notaEdited.imagePath;
+    _titleController = TextEditingController(text: _noteTitle);
+    _titleController.addListener(_updateNoteTitle);
+  }
+
+  @override
+  void dispose(){
+    _titleController.removeListener(_updateNoteTitle);
+    _titleController.dispose();
+    super.dispose();
+  }
+
+
+  //FUNCIONES-----------------------------------------------------
+
+  int _getNewId(){
+    return DateTime.now().millisecondsSinceEpoch;
+  }
+
+  final ImagePicker _picker = ImagePicker();
+  
+  void _pickImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _currentImagePath = pickedFile.path;
+      });
+    }
+  }
+
+  void _takePhoto() => _pickImage(ImageSource.camera);
+  void _selectFromGallery() => _pickImage(ImageSource.gallery);
+
+  void _updateNoteTitle(){
+    setState(() {
+      _noteTitle = _titleController.text;
+    });
+  }
+
+  void _saveAndGoBack() async {
+
+    final int noteId = widget.notaEdited.id == 0 ? _getNewId() : widget.notaEdited.id;
+
+    final Note updatedNote = Note(
+      id: noteId,                                       //Nuevo ID o el de siempre
+      noteTitle: _noteTitle,
+      imagePath: _currentImagePath,                     //nuevo path al archivo
+      creationDate: widget.notaEdited.creationDate,     
+      editCreationDate: DateTime.now().toString(),      //Actualizar ultima fecha
+      tags: _tags.isEmpty ? null : _tags,               //No importante, puede pasar
+      tabs: _tabs.isEmpty ? null : _tabs,               // No importante, puede pasar
+    );
+
+    await _storage.saveNote(updatedNote);
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    Navigator.pop(context, updatedNote);
+  }
+
+  void _goBackWithoutSaving() {
     Navigator.pop(context);
     Navigator.pop(context);
   }
 
-  //giardar dialogo
+  void _addTag(String newTag){
+    if(newTag.trim().isEmpty) return;
+    setState(() {
+      _tags.add(newTag);
+    });
+  }
+
+  void _deleteTag(int index){
+    setState(() {
+      _tags.removeAt(index);
+    });
+  }
+
+  void _updateTag(int index, String newTag){
+    if(newTag.trim().isEmpty) return;
+    setState(() {
+      _tags[index] = newTag;
+    });
+  }
+
+  void _addTab(String title, String body){
+    if(title.trim().isEmpty) return;
+    setState(() {
+      _tabs.add(TabItem(title: title, body: body));
+    });
+  }
+
+  void _deleteTab(int index){
+    setState(() {
+      _tabs.removeAt(index);
+    });
+  }
+
+  void _updateTabTitle(int index, String newTitle) {
+    if (newTitle.trim().isNotEmpty) {
+      setState(() {
+        _tabs[index] = _tabs[index].copyWith(title: newTitle.trim());
+      });
+    }
+  }
+
+  void _updateTabBody(int index, String newBody) {
+    setState(() {
+      _tabs[index] = _tabs[index].copyWith(body: newBody);
+    });
+  }
+
+  //REFACTORS ------------------------------------------------
+  SliverToBoxAdapter _imageSelection(){
+
+    final String? imagePath = _currentImagePath;
+
+    ImageProvider? imageProvider;
+
+    if (imagePath != null) {
+      if(imagePath.startsWith('assets/')){
+        imageProvider = AssetImage(imagePath);
+      } else {
+        imageProvider = FileImage(File(imagePath));
+      }
+    }
+
+    return SliverToBoxAdapter(
+      child: Padding(padding: const EdgeInsets.all(1),
+        child: Card(
+          margin: EdgeInsets.all(2),
+          color: const Color.fromARGB(255, 224, 162, 54),
+          child: Column(
+            children : [
+              Padding(
+                padding: EdgeInsets.only(top: 6, left: 6, right: 6),
+                child: (imageVisible && imageProvider!= null)? Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white, width: 3),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image(image: imageProvider, fit: BoxFit.cover),
+                  ),
+                ): null,
+              ),
+              Padding(padding: EdgeInsets.all(8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _takePhoto,
+                      child: Row(children: [Icon(Icons.photo), Text('Sacar Foto', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize))])),
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: _selectFromGallery,
+                      child: Row(children: [Icon(Icons.folder), Text('De Album', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize))]))
+                  ],
+                )
+              )
+            ]
+          )
+        )
+      )
+    );
+  }
+
+  SliverToBoxAdapter _noteTabWidget(TabItem tab, index){
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(1),
+        child: Card(
+          margin: EdgeInsets.all(2),
+          color: Colors.deepPurple[200],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children:[
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    IconButton(onPressed: () => _deleteTab(index),
+                      icon: Icon(Icons.delete), tooltip: 'DeleteTab',
+                    ),
+                    SizedBox(width: 16),
+                    Expanded( 
+                      child: TextFormField(
+                        initialValue: tab.title,
+                        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                        style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.white),
+                        onChanged: (newTitle) => _updateTabTitle(index, newTitle),
+                      ) 
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.tab, color: Colors.white,),
+                  ],
+                ),
+              ),
+              Divider(color: Colors.white),
+              Padding(
+                padding: EdgeInsets.all(10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Expanded( 
+                      child: TextFormField(
+                        initialValue: tab.body,
+                        keyboardType: TextInputType.multiline,
+                        maxLines: null,
+                        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                        style: TextStyle(fontSize: fontTextSize, fontFamily: fontFamilyText, color: Colors.white),
+                        onChanged: (newBody) => _updateTabBody(index, newBody),
+                      ) 
+                    )
+                  ],
+                ) 
+              )
+            ]
+          )
+        ),
+      )
+    );
+  }
+
+  SliverToBoxAdapter _noteTagWidget(String tag, int index){
+    return SliverToBoxAdapter(
+      child: Padding(padding: const EdgeInsets.all(1),
+        child: Card(
+          margin: EdgeInsets.all(2),
+          color: const Color.fromARGB(255, 82, 158, 187),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                IconButton(
+                  onPressed: () => _deleteTag(index), 
+                  icon: const Icon(Icons.delete), 
+                  tooltip: 'Delete Tag',
+                ),
+                const SizedBox(width: 8),
+                Expanded( 
+                  child: TextFormField(
+                    initialValue: tag,
+                    decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                    style: TextStyle(fontSize: fontTitleSize, fontFamily: fontFamilyText, fontWeight: FontWeight.bold, color: Colors.white),
+                    onChanged: (newText) => _updateTag(index, newText),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.label, color: Colors.white,),
+              ],
+            ),
+          ),
+        )
+      )
+    );
+  }
+  
+  SliverToBoxAdapter _noteTitleWidget(){
+    return SliverToBoxAdapter(
+      child: Padding(padding: const EdgeInsets.all(1),
+        child: Card(
+          margin: const EdgeInsets.all(2),
+          color: const Color.fromARGB(255, 203, 62, 109),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Expanded( 
+                  child: TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                    style: TextStyle(fontSize: fontTitleSize, fontFamily: fontFamilyText, fontWeight: FontWeight.bold, color: Colors.white), 
+                  ), 
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.document_scanner, color: Colors.white,),
+              ],
+            ),
+          ),
+        )
+      )
+    );
+  }
+
+  //DIALOGS------------------------------------
+  void _showAddTagDialog() {
+    final TextEditingController tagController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add New Tag'),
+          content: TextField(
+            controller: tagController,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'Enter Tag Name'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                _addTag(tagController.text);
+                Navigator.pop(context);
+              },
+              child: const Text('Add'),
+            ),
+            TextButton( onPressed: () => Navigator.pop(context), child: const Text('Cancel'), ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAddTabDialog() {
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController bodyController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add New Tab'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  autofocus: true,
+                  decoration: const InputDecoration(hintText: 'Enter Tab Title'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: bodyController,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter Tab Content (Optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                _addTab(titleController.text, bodyController.text);
+                Navigator.pop(context);
+              },
+              child: const Text('Add'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showDialog(){
     showDialog(
       context: context,
@@ -31,181 +412,90 @@ class _EditPage extends State<EditPage>{
           title: const Text('Save Progress?'),
           content: const Text('Want to save this Note?'),
           actions: <Widget>[
-            TextButton(onPressed: _goBackTwice, child: Text('Save')),
+            TextButton(onPressed: ()=> { Navigator.of(context).pop(), _saveAndGoBack()}, child: const Text('Save')),
             TextButton(onPressed: (){ Navigator.of(context).pop(); } 
-            , child: Text('Cancel'))
+            , child: const Text('Cancel'))
+          ],
+        );
+      }
+    );
+  }
+  
+  void _showChooseAddDialog(){
+    showDialog(context: context,
+    builder: (BuildContext context){
+      return AlertDialog(
+          backgroundColor: Colors.purple[50],
+          title: const Text('What do you want to add?'),
+          actions: <Widget>[
+            TextButton( onPressed: () => { Navigator.of(context).pop(),_showAddTabDialog(), },
+            child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.tab, color: Colors.indigo[200]), SizedBox(width: 8), Text('Tab'), ],),
+          ),
+          TextButton(
+            onPressed: () => { Navigator.of(context).pop(), _showAddTagDialog(), },
+            child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.label_outline, color: Colors.blueGrey), SizedBox(width: 8), Text('Tag'), ], ),
+          ),
+            TextButton(onPressed: () => {Navigator.of(context).pop()}, child: const Text('Cancel'))
           ],
         );
       }
     );
   }
 
-
-  SliverToBoxAdapter _noteMainTitle(title){
-    return SliverToBoxAdapter(
-      child: Padding(padding: const EdgeInsets.all(3),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            color: const Color.fromARGB(255, 224, 85, 88),
-            child: Card(
-              shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(6), ),
-              child: Padding(
-                padding: const EdgeInsets.all(8), // Slightly more padding
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Expanded( child: Text( title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),maxLines: 10, overflow: TextOverflow.ellipsis, ), ),
-                    SizedBox(width: 8),
-                    Icon(Icons.document_scanner),
-                  ],
-                ),
-              ),
-            )
-          )
-        )
-      )
-    );
-  }
-
-  //Refactor: title and button
-  Card _tabTitle(String title) {
-    return Card(
-      shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(6), ),
-      child: Padding(
-        padding: const EdgeInsets.all(8), // Slightly more padding
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            FloatingActionButton( onPressed: null, tooltip: 'Delete Tab', heroTag: Object(), child: Icon(Icons.delete)),
-            SizedBox(width: 16),
-            Expanded( child: Text( title, style: TextStyle(fontSize: _fontSizeTitle, fontWeight: FontWeight.bold),maxLines: 10, overflow: TextOverflow.ellipsis, ), ),
-            SizedBox(width: 8),
-            Icon(Icons.tab),
+  void _showLeaveDialog(){
+    showDialog(
+      context: context,
+      builder: (BuildContext context){
+        return AlertDialog(
+          backgroundColor: Colors.purple[50],
+          title: const Text('Leave Without Saving?'),
+          content: const Text('Any unsaved changes will be lost.'),
+          actions: <Widget>[
+            TextButton(onPressed: _goBackWithoutSaving, child: const Text('Leave')),
+            TextButton(onPressed: (){ Navigator.of(context).pop(); } 
+            , child: const Text('Cancel'))
           ],
-        ),
-      ),
+        );
+      }
     );
   }
 
-  //Refactor: regresa un card que contiene el texto
-  Card _tabText(text){
-    return Card(
-      shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(6), ),
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Text(text),
-      )
-    );
-  }
-
-  //REFACTOR: Regresa todo un 'tab'
-  SliverToBoxAdapter _tabContent(title, text){
+  //Add Tabs or Tags, to make sure SpeedDial doesnt make  ----------------------------------
+  SliverToBoxAdapter _addTabSliver() {
     return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.all(3),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            color: Colors.deepPurple[200],
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _tabTitle(title),
-                SizedBox(),
-                _tabText(text)
-              ]
-            ), 
-          )
-        ),
-      )
-    );
-  }
-
-  //Refactor: crea un contenedor para el tag
-  SliverToBoxAdapter _tagsContent(tag){
-    return SliverToBoxAdapter(
-      child: Padding(padding: const EdgeInsets.all(3),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            color: const Color.fromARGB(255, 100, 153, 174),
-            child: Card(
-              shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(6), ),
-              child: Padding(
-                padding: const EdgeInsets.all(8), // Slightly more padding
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    FloatingActionButton( onPressed: null, tooltip: 'Delete Tab',  heroTag: Object(), child: Icon(Icons.delete),),
-                    SizedBox(width: 8),
-                    Expanded( child: Text( tag, style: TextStyle(fontSize: _fontSizeTag, fontWeight: FontWeight.bold),maxLines: 10, overflow: TextOverflow.ellipsis, ), ),
-                    SizedBox(width: 8),
-                    Icon(Icons.label),
-                  ],
-                ),
+      child: Padding(padding: EdgeInsets.all(1),
+        child: Card(
+          margin: const EdgeInsets.all(2),
+          color: const Color.fromARGB(255, 53, 36, 102),
+          elevation: 2, 
+          shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(8.0),  side: const BorderSide( color: Colors.white, width: 3.0, ),
+          ),
+          child: InkWell(
+            onTap: () => _showChooseAddDialog(),
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 60, horizontal: 30),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_circle_outline, size: 28, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text(
+                    'Tap to Add a new Tab or Tag',
+                    style: TextStyle(
+                      fontSize: 18, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.white
+                    ),
+                  ),
+                ],
               ),
             )
-          )
+          ) 
         )
       )
     );
   }
-
-  //Refactor: Botones del fondo
-  Widget _footerButtons(){
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Expanded(child: FloatingActionButton.extended(onPressed: null, label: Text('Add Tag'), icon: Icon(Icons.label), heroTag: 'BtnAddTag',)),
-        SizedBox(width: 5),
-        Expanded(child: FloatingActionButton.extended(onPressed: null, label: Text('Add Tab'), icon: Icon(Icons.add), heroTag: 'BtnAddTab',)),
-        SizedBox(width: 5),
-        FloatingActionButton(onPressed: _showDialog, tooltip: 'Save', heroTag: 'BtnSaveNote', child: const Icon(Icons.save))
-      ]
-    );
-  }
-
-  //icono
-  Widget _imageContainer(assetPath){
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.white, width: 3,),
-        borderRadius: BorderRadius.circular(10)
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: SizedBox(width: 100, height: 100, child: Image.asset(assetPath, fit: BoxFit.fitHeight))
-      )
-    );
-  }
-
-  //Refactor: icono de la nota, ademas de poder cambiar el color
-  SliverToBoxAdapter _topIcon(assetPath){
-    return SliverToBoxAdapter(
-      child: Padding(padding: const EdgeInsets.all(3),
-        child: Card(
-          margin: EdgeInsets.all(1),
-          color: const Color.fromARGB(255, 203, 62, 109),
-          child: Padding(padding: const EdgeInsets.all(3),
-            child: Row(
-              children: [
-                _imageContainer(assetPath),
-                SizedBox(width: 10),
-                Column(
-                  children: [
-                    ElevatedButton(onPressed: null, child:  Row (children: [Icon(Icons.photo), Text('Sacar Foto')])),
-                    SizedBox(height: 10),
-                    ElevatedButton(onPressed: null, child:  Row (children: [Icon(Icons.folder), Text('De Album')]))
-                  ]
-                )
-              ]
-            )
-          )
-        )
-      )
-    );
-  }
+  //BUILD--------------------------------
 
   @override
   Widget build(BuildContext context){
@@ -213,26 +503,31 @@ class _EditPage extends State<EditPage>{
       backgroundColor: const Color.fromARGB(255, 53, 36, 102),
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(                   //PARTE SUPERIOR DEL WIDGET
+          SliverAppBar(
+            automaticallyImplyLeading: false, 
             backgroundColor: Colors.deepPurple,
             title: Row( children: [
+              IconButton(
+                onPressed: () => _showLeaveDialog(),
+                icon: const Icon(Icons.arrow_back), 
+                padding: EdgeInsets.zero, 
+              ),
               Image.asset('assets/images/DNLogo_Edit.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
-              Expanded(child: Text('Editing', style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
-            ]), //Titulo
+              const Expanded(child: Text('Page', style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 28, 1, 44)))),
+            ]),
           ),
-          _topIcon(notaDebug.imagePath),
-          _noteMainTitle(notaDebug.noteTitle),
-          _tagsContent(notaDebug.tags?[0] ?? ''),
-          _tagsContent(notaDebug.tags?[1] ?? ''),
-          _tagsContent(notaDebug.tags?[2] ?? ''),
-          _tagsContent(notaDebug.tags?[3] ?? ''),
-          _tagsContent(notaDebug.tags?[4] ?? ''),
-          _tagsContent(notaDebug.tags?[5] ?? ''),
-          _tabContent(notaDebug.tabs?[0].title ?? '', notaDebug.tabs?[0].body ?? ''),
-          _tabContent(notaDebug.tabs?[1].title ?? '', notaDebug.tabs?[1].body ?? ''),
+          if (imageVisible) _imageSelection(),
+          _noteTitleWidget(),
+          for (int i = 0; i < _tags.length; i++) _noteTagWidget(_tags[i], i),
+          for (int i = 0; i < _tabs.length; i++) _noteTabWidget(_tabs[i], i),
+          _addTabSliver()
         ]
       ),
-      bottomNavigationBar: BottomAppBar( color: Colors.deepPurple, child: _footerButtons(), ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () { _saveAndGoBack(); },
+        backgroundColor: Colors.teal,
+        child: const Icon( Icons.save, color: Colors.white, size: 28.0, ),
+      )
     );
   }
 }

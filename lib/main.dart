@@ -1,60 +1,66 @@
 import 'package:doodle_note/pages/home.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:doodle_note/providers/config_data.dart'; 
+import 'package:provider/provider.dart';
+import 'package:doodle_note/services/preferences.dart'; 
 
 void main() {
   runApp(const MyApp());
 }
 
-
 /*
   Tareas:
+  - Configuracion: Modo Oscuro (no importante, descartable)
+  - Modo OScuro: usar Material (no importante, descartable)
+
+  - HOME: Tomar todas las notas locales en el archivo.                                      (COMPLETADO)
+
+  - Modificar PAGE: Hacer que todo sea un SliverList, incluyendo el encabezado (AppBar)     (COMPLETADO)
+  - Modificar PAGE: Que funcione en base a la configuracion                                 (COMPLETADO)
+  - Modificar PAGE: Que funcione en base a la Nota escogida                                 (COMPLETADO)
+  - Modificar PAGE: Que elimine la nota                                                     (COMPLETADO)
+  - Modificar PAGE: Que permite compartir la nota
 
 
-  - README (HECHO)
-  - Icono y splashscreen      (HECHO)
-  - Contextualizar textos (HECHOS)
-  - Hacer mas imagenes de placeholder (HECHO)
+  - Notas: Formato Json                           (COMPLETADO)
+  - Imagenes: Usar camara y Album                 (COMPLETADO)
+    - Guardar imagenes en carpeta local           (COMPLETADO)
+    - Asociar imagenes a notas                    (COMPLETADO)
 
-  - IMPORTANTE SUBIR CAMBIOS A GITHUB
-    git status
-    git add .
-    git status <- Confirmar si es que se agrego
-    git commit -m 'Avance en la Aplicacion #3' <- ESTOY EN LA 3 VERSION
-    git push origin main
+  Guardado Local:
+  - creacion de una carpeta en el dispositivo     (COMPLETADO)
+  - guardar notas en formatio json/ base de datos (COMPLETADO)
+  - guardar imagenes tomadas del dispositivo      (COMPLETADO)
+  - Leer datos y usarlos                          (COMPLETADO)
 
-  - Hacer el Video
-    - Subtarea 1: crear presentacion
-      - Subtarea 1-1: definir el problema
-      - Subtarea 1-2: presentar la app
-      - Subtarea 1-3: inspiraciones detras de esta
-      - Subtarea 1-4: mostrar la app en accion (NOTA: NO MOSTRAR EL CODIGO)
-    - Subtarea 2: grabar la pantalla, debido a que es la presentacion + pantalla
-    - Subtarea 3: editar video para que este dentro del tiempo de 5 minutos
-    - Subtarea 4: subir video a youtube
+  - Modificar Search: Modo de busqueda funcional, que busque las notas
+  - Modificar Search: que funcione en base a las notas guardadas
 
+  - Modificar Edit: crear metodo que permite guardar datos en un formato                                  (COMPLETADO)
+  - Modificar Edit: presentacion es muy grande, tal vez usar otra cosa que no sea floating actoin button  (COMPLETADO)
+
+  - About: Crear pagina
+  - About: hacer que cargue json con las preguntas prehechas
+  - About: hacer que se permite enviar por correo las respuestas
 */
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-
     var logger = Logger();
-    logger.d("build compiladp");
+    logger.d("build compilado");
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    return ChangeNotifierProvider(
+      create: (context) => ConfigurationData(SharedPreferencesService()),
+        child: const MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'DoodleNote',
+        home: MyHomePage(title: 'DoodleNote'),
       ),
-      home: const MyHomePage(title: 'DoodleNote'),
-      //home: NotePageScreen(),
-      //home: EditPage()
-      //home: SearchPage(),
     );
+
   }
 }

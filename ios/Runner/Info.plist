@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>We need access to your photo gallery to select an image for your note.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>We need permission to save images to your photo library so your doodles can be kept in Photos.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>We need camera access to take a new picture for your note.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>We need microphone access to record videos (optional).</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>

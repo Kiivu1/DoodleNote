@@ -16,8 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
-
+version: 1.0.0+7
 environment:
   sdk: ^3.9.0
 
@@ -36,6 +35,17 @@ dependencies:
   cupertino_icons: ^1.0.8
   logger: ^2.6.1
   flutter_native_splash: ^2.4.6
+  shared_preferences: ^2.5.3        # preferencias
+  provider: ^6.1.5+1                # configuration data
+  path_provider: ^2.1.5             # acceso a archivos
+  image_picker: ^1.2.0              # imagenes de camara y galeria
+  permission_handler: ^12.0.1       # permisos
+  path: ^1.9.1                      # directorio de documentos
+  image_gallery_saver_plus: ^4.0.1  # guarda imagenes
+  intl: ^0.20.2                     # formatear datos
+  flutter_speed_dial: ^7.0.0        # uso de Widget para menu principal
+  url_launcher: ^6.3.2              # uso de correo electronico
+  share_plus: ^12.0.1               # compartir notas
  
 
 dev_dependencies:
@@ -49,6 +59,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.4
+  change_app_package_name: ^1.5.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -69,17 +80,13 @@ flutter:
 
   assets:
     - assets/images/DNImage1.png
-    - assets/images/DNImage2.png
-    - assets/images/DNImage3.png
-    - assets/images/DNImage4.png
-    - assets/images/DNImage5.png
-    - assets/images/DNImage6.png
-    - assets/images/DNImage7.png
     - assets/images/DNLogo_Edit.png
     - assets/images/DNLogo_Home.png
     - assets/images/DNLogo_Page.png
     - assets/images/DNSearchLogo.png
     - assets/images/PanchiMaloWAAAA.png
+    - assets/icons/DoodleNoteLogo_Full.png
+    - assets/preguntas.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -107,6 +114,19 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
+  fonts:
+  - family: Orbitron
+    fonts:
+      - asset: assets/font/Orbitron-Regular.ttf
+      - asset: assets/font/Orbitron-Bold.ttf
+        weight: 700
+  - family: ComicRelief
+    fonts:
+      - asset: assets/font/ComicRelief-Regular.ttf
+      - asset: assets/font/ComicRelief-Bold.ttf
+        weight: 700
+
+
 
 flutter_launcher_icons:
   android:
@@ -121,4 +141,4 @@ flutter_launcher_icons:
 # el splashscreen de la aplicacion
 flutter_native_splash:
   image: "assets/icons/DoodleNoteLogo.png"
-  color: "#818181"
+  color: "#280137"

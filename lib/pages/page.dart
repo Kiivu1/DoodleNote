@@ -1,195 +1,326 @@
+import 'package:doodle_note/services/note_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:doodle_note/pages/edit.dart';
-import 'package:doodle_note/models/listNotes.dart';
+import 'package:provider/provider.dart';
+import 'package:doodle_note/providers/config_data.dart';
+import 'package:doodle_note/models/notes.dart';
+import 'dart:io';
+import 'package:share_plus/share_plus.dart';
 
-//COSAS POR HACER:
-// - CONVERTIRLO A UN STATEFUL WIDGET
-// - QUITAR LOS TAGS
-// - QUITAR TITULO
+class NotePageScreen extends StatefulWidget {
+  const NotePageScreen({super.key, required this.notaPage});
 
-class NotePageScreen extends StatefulWidget{
-  const NotePageScreen({super.key});
+  final Note notaPage;
 
-    @override
+  @override
   State<NotePageScreen> createState() => _NotePageScreen();
 }
 
+class _NotePageScreen extends State<NotePageScreen> {
+  final NoteStorage _storage = NoteStorage();
 
-class _NotePageScreen extends State<NotePageScreen>{
+  late Note _currentNote;
 
-  //texto debug, para probar
-  final String debugText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse pulvinar augue et nisl varius ullamcorper. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ac lacus leo. Sed sit amet sagittis nibh, at lacinia tortor. Pellentesque porta, purus vehicula viverra congue, mauris augue pulvinar enim, sed dapibus metus neque at risus. Sed eleifend luctus magna at dictum. Pellentesque eget ex interdum, tristique diam vel, dictum lacus. Pellentesque viverra viverra tincidunt. Aliquam tortor nulla, auctor a odio et, dictum lobortis metus. In et dui non libero vehicula fringilla eget ut nibh. Aliquam fringilla blandit risus eget varius. Praesent id dapibus nisl. Sed sagittis lectus non feugiat molestie. Aenean ullamcorper mi diam. Sed augue nisi, eleifend non pulvinar nec, molestie sed tellus. Duis rutrum maximus finibus. Nulla sed dolor scelerisque, placerat nibh ultrices, pulvinar ante. Maecenas faucibus ante quis sapien ullamcorper finibus. Mauris et dolor a enim tempus bibendum. Cras eu cursus massa. Duis a ultricies risus. In hac habitasse platea dictumst. Nunc facilisis urna orci, eu dictum arcu sodales ut. Integer molestie tincidunt aliquet. Vivamus rhoncus nec lacus eget imperdiet. In ac pulvinar ipsum, nec feugiat leo. Vivamus id consequat erat, at faucibus dui. Ut dolor sapien, tempor ut risus at, scelerisque pretium quam. Sed et nibh quis urna hendrerit ornare. Cras id scelerisque neque. Nullam at varius tortor. Sed id mauris sit amet ligula commodo condimentum. Donec nec molestie risus, a vehicula ante. Integer sed erat mi. Curabitur condimentum nibh ut convallis ultricies. Nam et interdum lacus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed consectetur, nulla vulputate posuere viverra, libero ex viverra eros, non viverra velit tellus ac felis. Aenean ultricies dui sed nisi fringilla, a ultricies ipsum cursus. Vestibulum sit amet sem enim. Quisque varius vestibulum dolor, ut placerat nibh euismod in. Aliquam sit amet mauris ante. Mauris in nisi nisi.  Nulla tristique ante enim, et eleifend nunc rutrum in. Nullam metus lorem, sollicitudin eget arcu a, tristique varius libero. Donec pharetra, ante a malesuada tincidunt, nisl ligula consectetur libero, in volutpat est augue sed sem. Duis suscipit justo purus, ac accumsan dolor pellentesque eget. Donec imperdiet scelerisque faucibus. Integer elementum augue et massa gravida, nec sodales metus dictum. Donec et semper massa.';
+  @override
+  void initState(){
+    super.initState();
+    _currentNote = widget.notaPage;
+  }
 
+  double get fontTitleSize => context.watch<ConfigurationData>().sizeFontTitle.toDouble();
+  double get fontTextSize => context.watch<ConfigurationData>().sizeFont.toDouble();
+  bool get imageVisible => context.watch<ConfigurationData>().showImage;
+  bool get dateVisible => context.watch<ConfigurationData>().showDate;
+  String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
+
+  void _goToEdit() async { 
+  final result = await Navigator.push(
+    context, 
+    MaterialPageRoute(builder: (context) => EditPage(notaEdited: _currentNote)),
+  );
+
+  if (result != null && result is Note) {
+    if (context.mounted) {
+      setState(() {
+        _currentNote = result; // _currentNote is updated with the new content
+      });
+    }
+  }
+}
+
+  void _deleteNote() async {
+    try {
+      await _storage.deleteNote(_currentNote);
+      Navigator.pop(context, true); 
+    } catch (e){
+      print('Error deleting note: $e');
+      Navigator.pop(context, false); 
+    }
+  }
+
+  void _shareNote() async {
+    final note = _currentNote; //Nota actual
+
+    //Formatear mensaje
+    StringBuffer shareText = StringBuffer();
+    shareText.writeln('${note.noteTitle}');
+    shareText.writeln('');
+    shareText.writeln('--------------------------------');
+    shareText.writeln('Creada: ${note.creationDate}');
+    shareText.writeln('Editado en: ${note.editCreationDate}');
+    shareText.writeln('');
+    if (note.tags != null && note.tags!.isNotEmpty) {
+      shareText.writeln('Tags: ${note.tags!.join(', ')}');
+      shareText.writeln('-----------------------------------');
+    }
+    shareText.writeln('');
+    if (note.tabs != null) {
+      for (var tab in note.tabs!) {
+        shareText.writeln('\n-- ${tab.title.toUpperCase()} --');
+        shareText.writeln(tab.body);
+      }
+    }
+
+    List<XFile> filesToShare = [];      //Imagen
+    String textContent = shareText.toString();
+    String subject = 'Doodle Note: ${note.noteTitle}';
     
-  void _goToEdit(){
-    Navigator.push( context, MaterialPageRoute(builder: (context) => EditPage()), );
-  }
+    if (note.imagePath != null && !note.imagePath!.startsWith('assets/')) {
+      final imageFile = File(note.imagePath!);
+      if (await imageFile.exists()) {
+        filesToShare.add(XFile(note.imagePath!));
+        subject = 'Doodle Note: ${note.noteTitle} (con Imagen)';
+      }
+    }
 
-  void _goBackTwice(){
-    Navigator.pop(context);
-    Navigator.pop(context);
-  }
-
-  //Lista de tags que estan dentro de un CHIP
-  Widget _tagList(List<String> tags){
-    return Padding(padding: EdgeInsets.all(6),
-      child: Wrap(
-        spacing: 8.0,
-        runSpacing: 4.0,
-        alignment: WrapAlignment.center,
-        children: tags.map((tag) => Chip(
-          avatar: Icon( Icons.tag),
-          label: Text(tag),
-          backgroundColor: Colors.purple[200],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        )).toList(),
-      ),
-      // contenido
-    );
-  }
-
-  void _showDialog(){
-    showDialog(
-      context: context,
-      builder: (BuildContext context){
-        return AlertDialog(
-          backgroundColor: Colors.purple[50],
-          title: const Text('Delete DoodleNote'),
-          content: const Text('Do you want to delete this Note?'),
-          actions: <Widget>[
-            TextButton(onPressed: _goBackTwice, child: Text('Delete')),
-            TextButton(onPressed: (){ Navigator.of(context).pop(); } 
-            , child: Text('Cancel'))
-          ],
+    //Compartir
+    try {
+      if (filesToShare.isNotEmpty) {
+        await Share.shareXFiles( filesToShare, text: textContent, subject: subject, );
+      }
+      else {
+        await Share.share( textContent, subject: subject, );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo compartir la nota: $e')),
         );
       }
+    }
+  }
+  
+  SliverToBoxAdapter _tabContentExpandable(title, body){
+    final double space = 2;
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.all(6),
+        child: Card(
+          margin: EdgeInsets.all(space),
+          color: const Color.fromARGB(255, 165, 142, 219),
+          child: ExpansionTile(
+            initiallyExpanded: false,
+            tilePadding: EdgeInsets.all(8.0),
+            title: Text(
+              title,
+              style: TextStyle(fontFamily: fontFamilyText,fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
+            ),
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), 
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: Text( body, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize, color: Colors.black87), ),
+                ),
+              ),
+            ],
+          ),
+        )
+      ),
     );
   }
 
-  //Refactor, sirve para poder tener los botones de abajo.
-  Widget _footerButtons(){
-    return
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          FloatingActionButton( onPressed: _showDialog, tooltip: 'Borrar',  heroTag: 'BtnDelNote', child: const Icon(Icons.delete),),
-          SizedBox(width: 10),
-          Expanded( child: FloatingActionButton.extended(onPressed: _goToEdit, label: Text('Editar'), icon: Icon(Icons.edit), heroTag: 'BtnEdtNote',) ),
-          SizedBox(width: 10),
-          FloatingActionButton( onPressed: null, tooltip: 'Compartir',  heroTag: 'BtnShrNote', child: const Icon(Icons.share),),
-        ]
-      );
+  SliverToBoxAdapter _tagContent(List<String> tags) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.all(6),
+        child: Wrap(
+          spacing: 8.0,
+          runSpacing: 4.0,
+          alignment: WrapAlignment.center,
+          children: tags.map((tag) => Chip(
+                avatar: Icon(Icons.tag),
+                label: Text(tag, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize, color: Colors.black)),
+                backgroundColor: Colors.purple[200],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              )).toList(),
+        ),
+      ),
+    );
   }
-  
-  //orden es SingleChildScroll -> Card -> Padding -> Column(titulo: (Card + padding + text), espacio(sizedbox), texto (Card + Padding + text))
-  Widget _noteContent(title, text){
-    final double space = 3; //variable que determina el espacio
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(space),
-      child: Card(
-        margin: EdgeInsets.all(space), color: const Color.fromARGB(255, 89, 63, 148),
-        child: Padding(
-          padding: EdgeInsets.all(space),
+  void _showDialog() {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: Colors.purple[50],
+            title: Text('Delete DoodleNote', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize)),
+            content: Text('Do you want to delete this Note?', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize)),
+            actions: <Widget>[
+              TextButton(
+                onPressed: (){
+                  Navigator.of(context).pop();
+                  _deleteNote();
+                } ,
+                child: Text('Delete')
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Cancel')
+              )
+            ],
+          );
+        });
+  }
+
+  Widget _footerButtons() {
+    TextStyle buttonTextStyle = TextStyle(
+      fontSize: fontTextSize,
+      fontWeight: FontWeight.bold,
+    );
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: TextButton.icon(
+            onPressed: _showDialog,
+            icon: const Icon(Icons.delete_outline, color: Colors.white),
+            label: const Text('Delete', style: TextStyle(color: Colors.white)),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: buttonTextStyle,
+            ),
+          ),
+        ),
+        VerticalDivider(),
+        Expanded(
+          flex: 2,
+          child: TextButton.icon(
+            onPressed: _goToEdit,
+            icon: const Icon(Icons.edit, color: Colors.white),
+            label: const Text('Edit', style: TextStyle(color: Colors.white)),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: buttonTextStyle,
+            ),
+          ),
+        ),
+        VerticalDivider(),
+        Expanded(
+          child: TextButton.icon(
+            onPressed: _shareNote,
+            icon: const Icon(Icons.share, color: Colors.white),
+            label: const Text('Share', style: TextStyle(color: Colors.white)),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: buttonTextStyle,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  SliverToBoxAdapter _titleNote(String? imagePath, String title){
+    ImageProvider? imageProvider;
+
+    if (imagePath != null) {
+      if (imagePath.startsWith('assets/')) {
+        imageProvider = AssetImage(imagePath);
+      } else if (File(imagePath).existsSync()) {
+        imageProvider = FileImage(File(imagePath));
+      }
+    }
+
+    // Fallback to a default asset if no image is found or path is null
+    if (imageProvider == null) {
+      imageProvider = const AssetImage('assets/images/DNImage1.png');
+    }
+
+    return SliverToBoxAdapter(
+      child: Padding(padding: const EdgeInsets.all(3),
+        child: Card(
+          margin: EdgeInsets.all(6),
+          color: const Color.fromARGB(255, 194, 175, 238),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Card( margin: EdgeInsets.all(space), color: const Color.fromARGB(255, 165, 142, 219), child: Padding(padding: EdgeInsets.all(5),
-                child: Text(title, style: TextStyle(fontSize: 20),),),),
-              SizedBox(height: space),
-              Card( margin: EdgeInsets.all(space), color: const Color.fromARGB(255, 165, 142, 219), child: Padding(padding: EdgeInsets.all(5),
-                child: Text(text, style: TextStyle(fontSize: 16),),),),
-            ]
-          )
+              if (imageVisible) // Apply visibility check here
+              Padding(
+                padding: EdgeInsets.all(6),
+                child: Container(
+                  width: double.infinity,
+                  height: 250, // Added a fixed height for better layout
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white, width: 3),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    // CORRECTED: Use Image widget with the determined ImageProvider
+                    child: Image(image: imageProvider, fit: BoxFit.cover),
+                  ),
+                ),
+              ),
+              // Title Text
+              Padding(
+                padding: EdgeInsets.all(12),
+                child: Text( title, style: TextStyle(fontFamily: fontFamilyText , fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
         )
       )
     );
   }
-
-  //refactor, titulo de la nota
-  Widget _titleContent(imagePath, title){
-    return Padding(padding: EdgeInsets.all(6),
-      child: Card(
-        margin: EdgeInsets.all(6),
-        color: const Color.fromARGB(255, 194, 175, 238),
-        child: Padding(padding: EdgeInsets.all(6),
-          child: Row(
-            children: [
-              Container(width: 45, height: 45,
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child:ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(imagePath, fit: BoxFit.cover)
-                  )
-              ),
-              SizedBox(width: 6),
-              Expanded(child: Text(title, style: const TextStyle(fontSize: 20, color: Colors.black))), //texto
-            ]
-          ),
-        ),
-      )
-    );
-  }
-
-
-
-  //build de la pantalla
+  
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      initialIndex: 0,
-      length: 2,
-      child: Scaffold(
-        backgroundColor: const Color.fromARGB(255, 53, 36, 102),
-        body: NestedScrollView(
-          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-            return <Widget>[
-              SliverAppBar(
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Image.asset('assets/images/DNLogo_Page.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
-                    Expanded(child: Text('Search', style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
-                  ]
-                ),
-                floating: false,
-                pinned: false,
-                expandedHeight: 300,
-                backgroundColor: Colors.deepPurple,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _titleContent(notaDebug.imagePath, notaDebug.noteTitle),
-                      SizedBox(height: 20),
-                      _tagList([...?notaDebug.tags])
-                    ],
-                  ),
-
-                ),
-                bottom: TabBar(
-                  tabs: [
-                    Tab(child: Text(notaDebug.tabs?[0].title ?? '', overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white))),
-                    Tab(child: Text(notaDebug.tabs?[1].title ?? '', overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white))),
-                  ]
-                ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            children: <Widget>[
-              _noteContent(notaDebug.tabs?[0].title ?? '', notaDebug.tabs?[0].body ?? ''),
-              _noteContent(notaDebug.tabs?[1].title ?? '', notaDebug.tabs?[1].body ?? '')
-            ] 
+    return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 53, 36, 102),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: Colors.deepPurple,
+            title: Row( children: [
+              Image.asset('assets/images/DNLogo_Edit.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
+              const Expanded(child: Text('Page', style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 28, 1, 44)))),
+            ]),
           ),
-        ),
-        bottomNavigationBar: BottomAppBar( color: Colors.deepPurple ,child: _footerButtons(), ),
+          _titleNote(_currentNote.imagePath, _currentNote.noteTitle),
+          if (_currentNote.tags != null) _tagContent(_currentNote.tags!),
+          if (_currentNote.tabs != null) 
+            for (var tab in _currentNote.tabs!) _tabContentExpandable(tab.title, tab.body),
+        ],
       ),
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.deepPurple,
+        child: _footerButtons(),
+      )
     );
   }
 }

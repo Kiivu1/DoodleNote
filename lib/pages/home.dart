@@ -2,7 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:doodle_note/pages/page.dart';
 import 'package:doodle_note/pages/search.dart';
 import 'package:doodle_note/pages/edit.dart';
-import 'package:doodle_note/models/listNotes.dart';
+import 'package:doodle_note/pages/configuration.dart';
+import 'package:provider/provider.dart';
+import 'package:doodle_note/providers/config_data.dart';
+import 'package:doodle_note/services/note_storage.dart'; 
+import 'package:doodle_note/models/notes.dart'; 
+import 'dart:io';
+import 'package:intl/intl.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:doodle_note/pages/about.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -15,21 +23,85 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
-  void _goToPage(){
-    Navigator.push( context, MaterialPageRoute(builder: (context) => NotePageScreen()), );
+  final NoteStorage _storage = NoteStorage();
+  List<Note> _notes = [];
+  bool _isLoading = true;
+
+  String _formatDate(String dateStrign){
+    try{
+      final dateTime = DateTime.parse(dateStrign);
+      return DateFormat('MMM d, yyyy h:mm a').format(dateTime);
+    } catch (e){
+      print('Error parsing date: $e');
+      return 'Invalid Date';
+    }
   }
 
-  void _goToSearch(){
-    Navigator.push( context, MaterialPageRoute(builder: (context) => SearchPage()), );
+  double get fontTitleSize => context.watch<ConfigurationData>().sizeFontTitle.toDouble();
+  double get fontDateSize => context.watch<ConfigurationData>().sizeFont.toDouble();
+  bool get imageVisible => context.watch<ConfigurationData>().showImage;
+  bool get dateVisible => context.watch<ConfigurationData>().showDate;
+  String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
+
+  @override
+  void initState(){
+    super.initState();
+    _loadNotes();
   }
 
-  void _goToEdit(){
-    Navigator.push( context, MaterialPageRoute(builder: (context) => EditPage()), );
+  //FUNCIONES------------------------------------------------------
+  Future<void> _loadNotes() async{
+    setState((){ _isLoading = true; });
+    final loadedNotes = await _storage.readAllNotes();
+    setState(() {
+      _notes = loadedNotes;
+      _isLoading = false;
+    });
   }
 
+  void _goToPage(Note note) async {
+    await Navigator.push( context, MaterialPageRoute(builder: (context) => NotePageScreen(notaPage: note)), );
+    _loadNotes();
+  }
 
-  //refactor, crea una imagen, con un borde blanco
-  Widget _imageContainer(assetPath){
+  void _goToSearch() async {
+    await Navigator.push( context, MaterialPageRoute(builder: (context) => SearchPage()), );
+    _loadNotes();
+  }
+
+  void _goToEdit({Note? note}) async {
+    final Note noteToEdit = note ?? Note(id: 0, noteTitle: 'New Doodle Note', creationDate: DateTime.now().toString(), editCreationDate: DateTime.now().toString());
+    await Navigator.push( context, MaterialPageRoute(builder: (context) => EditPage(notaEdited: noteToEdit)), );
+    _loadNotes();
+  }
+  void _goToConfig() async {await Navigator.push(context, MaterialPageRoute(builder: (context) => ConfigurationPage(title: 'Configuration')), ); _loadNotes(); }
+  void _goToAbout() async {await Navigator.push(context, MaterialPageRoute(builder: (context)=> AboutPage()), ); _loadNotes(); }
+
+  //REFACTORS------------------------------------------------------
+  Widget _imageContainer(String? imagePath, {double size = 40}){
+    ImageProvider? imageProvider;
+
+    if(imagePath != null){
+      if(imagePath.startsWith('assets/')){
+        imageProvider = AssetImage(imagePath);
+      } else if (File(imagePath).existsSync()) {
+        imageProvider = FileImage(File(imagePath));
+      }
+    }
+
+    if(imageProvider == null){
+      return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white, width: 3,),
+        borderRadius: BorderRadius.circular(10)
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(width: size, height: size, child: Image.asset('assets/images/DNImage1.png', fit: BoxFit.cover))
+      )
+    );
+    }
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.white, width: 3,),
@@ -37,66 +109,154 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: SizedBox(width: 40, height: 40, child: Image.asset(assetPath, fit: BoxFit.cover))
+        child: SizedBox(width: size, height: size, child: Image(image: imageProvider, fit: BoxFit.cover))
       )
     );
   }
 
-  //Refactor: agrega la nota
-  SliverToBoxAdapter _noteContent(assetPath, title, date){
-    final double fontTitleSize = 16;
-    final double fontDateSize = 10;
-
-    return SliverToBoxAdapter(
-      child: Padding(padding: const EdgeInsets.all(1),
+  //Contenedor original
+  Widget _ogNoteContent(Note note){
+    return Padding(padding: const EdgeInsets.all(1),
         child: Card( margin: EdgeInsets.all(2), color: const Color.fromARGB(255, 144, 119, 244),
           child: ListTile(
-            onTap: _goToPage,                                                                                      //AQUI PONER METODO DE NAVEGADOR
-            leading: _imageContainer(assetPath),
-            title: Text(title, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: fontTitleSize, fontWeight: FontWeight.bold , color: Colors.black)),
-            subtitle: Text(date, style: TextStyle(fontSize: fontDateSize, fontWeight: FontWeight.bold , color: Colors.black)),
+            onTap: () => _goToPage(note),
+            leading: imageVisible ? _imageContainer(note.imagePath) : null,
+            title: Text(note.noteTitle, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold , color: Colors.black)),
+            subtitle: Text(dateVisible ? _formatDate(note.editCreationDate) : '', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontDateSize, fontWeight: FontWeight.bold , color: Colors.black)),
             trailing: Icon(Icons.arrow_forward, color: const Color.fromARGB(255, 20, 1, 34))
           ) 
         )
+    );
+  }
+  //contenedor pequeño
+  Widget _compactNote(Note note){
+    return Padding(padding: const EdgeInsets.all(1),
+      child: Card( margin: EdgeInsets.all(2), color: const Color.fromARGB(255, 144, 119, 244),
+        child: ListTile(
+          onTap: () => _goToPage(note),
+          title: Text(note.noteTitle, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold , color: Colors.black)),
+        )
       )
     );
+  }
+  //Contenedor Grande
+  Widget _gridNote(Note note){
+    const double imageSize = 200;
+
+    return Card(
+      margin: const EdgeInsets.all(4),
+      color: const Color.fromARGB(255, 144, 119, 244),
+      child: InkWell(
+        onTap: () => _goToPage(note),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(child: imageVisible ? _imageContainer(note.imagePath, size: imageSize): null),
+              const SizedBox(height: 8),
+              Text(
+                note.noteTitle,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                dateVisible ? _formatDate(note.editCreationDate): '',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: fontFamilyText, fontSize: fontDateSize, fontWeight: FontWeight.bold, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  //Refactor: agrega la nota
+  Widget _noteContent(Note note){
+    int typeNoteLayout = context.watch<ConfigurationData>().menuLayout;
+
+    switch (typeNoteLayout) {
+      case 0: return SliverToBoxAdapter(child:  _ogNoteContent(note));
+      case 1: return SliverToBoxAdapter(child:  _gridNote(note));
+      case 2: return SliverToBoxAdapter(child:  _compactNote(note));
+      default: return SliverToBoxAdapter(child:  _ogNoteContent(note));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 57, 29, 82),
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: Colors.deepPurple,
-            title:Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Image.asset('assets/images/DNLogo_Home.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
-                Expanded(child: Text('DoodleNote', style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
-                SizedBox(width: 1),
-                ElevatedButton(onPressed: _goToSearch, child: Row( children: [ Icon(Icons.search), Text('Search')]))
-              ]
-            )
+      body: RefreshIndicator(
+        triggerMode: RefreshIndicatorTriggerMode.onEdge,
+        edgeOffset: kToolbarHeight,
+        onRefresh: _loadNotes,
+        color: Colors.deepPurple,
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              backgroundColor: Colors.deepPurple,
+              title:Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Image.asset('assets/images/DNLogo_Home.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
+                  Expanded(child: Text('DoodleNote', style: TextStyle(fontFamily: fontFamilyText, fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
+                ]
+              )
+            ),
+            if(_isLoading)
+              const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))),
+            if (!_isLoading)
+              ..._notes.map((note) => _noteContent(note)).toList(),
+            if (!_isLoading && _notes.isEmpty)
+              SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(50), child: Text('No notes found. Create a new one!', style: TextStyle(fontFamily: fontFamilyText,color: Colors.white, fontSize: fontDateSize))))),
+          ],
+        ),
+      ),
+      floatingActionButton: SpeedDial(
+        icon: Icons.more,
+        activeIcon: Icons.close,
+        backgroundColor: Colors.pinkAccent,
+        foregroundColor: Colors.white,
+        spacing: 10,
+        spaceBetweenChildren: 10,
+        curve: Curves.bounceIn,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.add, color: Colors.white),
+            backgroundColor: Colors.green,
+            label: 'Create Note',
+            labelStyle: const TextStyle(fontWeight: FontWeight.w500),
+            onTap: () => _goToEdit(),
           ),
-          _noteContent(notaDebug.imagePath, notaDebug.noteTitle, notaDebug.creationDate),
-          _noteContent(noteA.imagePath, noteA.noteTitle, noteA.creationDate),
-          _noteContent(noteB.imagePath, noteB.noteTitle, noteB.creationDate),
-          _noteContent(noteC.imagePath, noteC.noteTitle, noteC.creationDate),
-          _noteContent(noteD.imagePath, noteD.noteTitle, noteD.creationDate),
-          _noteContent(noteE.imagePath, noteE.noteTitle, noteE.creationDate),
-          _noteContent(noteF.imagePath, noteF.noteTitle, noteF.creationDate),
-          _noteContent('assets/images/DNImage1.png', 'Doodle Note #1', '21/09/2025'),
-          _noteContent('assets/images/DNImage1.png', 'Doodle Note #2', '21/09/2025'),
-          _noteContent('assets/images/DNImage1.png', 'Doodle Note #3', '21/09/2025'),
-          _noteContent('assets/images/DNImage1.png', 'Doodle Note #4', '21/09/2025'),
-          _noteContent('assets/images/DNImage1.png', 'Doodle Note #5', '21/09/2025'),
-          _noteContent('assets/images/DNImage1.png', 'Doodle Note #6', '21/09/2025'),
-          _noteContent('assets/images/DNImage1.png', 'Doodle Note #7', '21/09/2025'),
+          SpeedDialChild(
+            child: const Icon(Icons.search, color: Colors.white),
+            backgroundColor: Colors.blueAccent,
+            label: 'Search',
+            labelStyle: const TextStyle(fontWeight: FontWeight.w500),
+            onTap: () => _goToSearch(),
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.settings, color: Colors.white),
+            backgroundColor: Colors.orange,
+            label: 'Configuration',
+            labelStyle: const TextStyle(fontWeight: FontWeight.w500),
+            onTap: () => _goToConfig(),
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.person, color: Colors.white),
+            backgroundColor: Colors.purple,
+            label: 'About',
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+            onTap: () => _goToAbout(),
+          ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(onPressed: _goToEdit, tooltip: 'Create Note', child: Icon(Icons.add)),
     );
   }
 }
