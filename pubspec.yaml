@@ -46,6 +46,10 @@ dependencies:
   flutter_speed_dial: ^7.0.0        # uso de Widget para menu principal
   url_launcher: ^6.3.2              # uso de correo electronico
   share_plus: ^12.0.1               # compartir notas
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0
+  google_sign_in: ^7.2.0
  
 
 dev_dependencies:

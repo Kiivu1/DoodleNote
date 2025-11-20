@@ -11,38 +11,22 @@ void main() {
 
 /*
   Tareas:
-  - Configuracion: Modo Oscuro (no importante, descartable)
-  - Modo OScuro: usar Material (no importante, descartable)
 
-  - HOME: Tomar todas las notas locales en el archivo.                                      (COMPLETADO)
-
-  - Modificar PAGE: Hacer que todo sea un SliverList, incluyendo el encabezado (AppBar)     (COMPLETADO)
-  - Modificar PAGE: Que funcione en base a la configuracion                                 (COMPLETADO)
-  - Modificar PAGE: Que funcione en base a la Nota escogida                                 (COMPLETADO)
-  - Modificar PAGE: Que elimine la nota                                                     (COMPLETADO)
-  - Modificar PAGE: Que permite compartir la nota
+  - LOGIN
+  - REGISTER
 
 
-  - Notas: Formato Json                           (COMPLETADO)
-  - Imagenes: Usar camara y Album                 (COMPLETADO)
-    - Guardar imagenes en carpeta local           (COMPLETADO)
-    - Asociar imagenes a notas                    (COMPLETADO)
-
-  Guardado Local:
-  - creacion de una carpeta en el dispositivo     (COMPLETADO)
-  - guardar notas en formatio json/ base de datos (COMPLETADO)
-  - guardar imagenes tomadas del dispositivo      (COMPLETADO)
-  - Leer datos y usarlos                          (COMPLETADO)
-
-  - Modificar Search: Modo de busqueda funcional, que busque las notas
-  - Modificar Search: que funcione en base a las notas guardadas
-
-  - Modificar Edit: crear metodo que permite guardar datos en un formato                                  (COMPLETADO)
-  - Modificar Edit: presentacion es muy grande, tal vez usar otra cosa que no sea floating actoin button  (COMPLETADO)
-
-  - About: Crear pagina
-  - About: hacer que cargue json con las preguntas prehechas
-  - About: hacer que se permite enviar por correo las respuestas
+  - TRADUCCION:
+    - español
+    - ingles
+  - CLOUD STORAGE:
+  - subit notas(json) a la nube.
+  - Pantalla de cloud storage
+    - Acceder datos personales
+    - guardar json en la nube
+    - poder eliminar nota
+    - acceder copia de json
+  - 
 */
 
 class MyApp extends StatelessWidget {
