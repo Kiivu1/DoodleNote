@@ -3,17 +3,8 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -40,49 +31,60 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyARg7T6MUK6nl2XP05dZkI3cuLBzcHrIu4',
-    appId: '1:460587572384:web:9fa3b9b862defdbf983dc5',
-    messagingSenderId: '460587572384',
-    projectId: 'doodlenote-eaf2d',
-    authDomain: 'doodlenote-eaf2d.firebaseapp.com',
-    storageBucket: 'doodlenote-eaf2d.firebasestorage.app',
-    measurementId: 'G-GTBDWVH4RT',
-  );
+  static FirebaseOptions get web {
+    return FirebaseOptions(
+      apiKey: dotenv.env['WEB_API_KEY']!,
+      appId: dotenv.env['WEB_APP_ID']!,
+      messagingSenderId: dotenv.env['MESSAGING_SENDER_ID']!,
+      projectId: dotenv.env['PROJECT_ID']!,
+      authDomain: dotenv.env['WEB_AUTH_DOMAIN'],
+      storageBucket: dotenv.env['STORAGE_BUCKET'],
+      measurementId: dotenv.env['WEB_MEASUREMENT_ID'],
+    );
+  }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBtWAePhI72tfCRXSVcRCTYEiklcIpDGdk',
-    appId: '1:460587572384:android:7d3b21a87b62256c983dc5',
-    messagingSenderId: '460587572384',
-    projectId: 'doodlenote-eaf2d',
-    storageBucket: 'doodlenote-eaf2d.firebasestorage.app',
-  );
+  static FirebaseOptions get android {
+    return FirebaseOptions(
+      apiKey: dotenv.env['ANDROID_API_KEY']!,
+      appId: dotenv.env['ANDROID_APP_ID']!,
+      messagingSenderId: dotenv.env['MESSAGING_SENDER_ID']!,
+      projectId: dotenv.env['PROJECT_ID']!,
+      storageBucket: dotenv.env['STORAGE_BUCKET'],
+    );
+  }
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAfnwFTR-Nvapwp-O_DVxSjhd4TFy6lX1w',
-    appId: '1:460587572384:ios:54bb41691a423fc2983dc5',
-    messagingSenderId: '460587572384',
-    projectId: 'doodlenote-eaf2d',
-    storageBucket: 'doodlenote-eaf2d.firebasestorage.app',
-    iosBundleId: 'cl.obando.ivan.kiivu',
-  );
+  static FirebaseOptions get ios {
+    return FirebaseOptions(
+      apiKey: dotenv.env['IOS_API_KEY']!,
+      appId: dotenv.env['IOS_APP_ID']!,
+      messagingSenderId: dotenv.env['MESSAGING_SENDER_ID']!,
+      projectId: dotenv.env['PROJECT_ID']!,
+      storageBucket: dotenv.env['STORAGE_BUCKET'],
+      iosBundleId: dotenv.env['IOS_BUNDLE_ID'],
+    );
+  }
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAfnwFTR-Nvapwp-O_DVxSjhd4TFy6lX1w',
-    appId: '1:460587572384:ios:4adffaee348762b4983dc5',
-    messagingSenderId: '460587572384',
-    projectId: 'doodlenote-eaf2d',
-    storageBucket: 'doodlenote-eaf2d.firebasestorage.app',
-    iosBundleId: 'com.example.doodleNote',
-  );
+  static FirebaseOptions get macos {
+    // Usualmente comparte configuración con iOS
+    return FirebaseOptions(
+      apiKey: dotenv.env['IOS_API_KEY']!,
+      appId: dotenv.env['IOS_APP_ID']!,
+      messagingSenderId: dotenv.env['MESSAGING_SENDER_ID']!,
+      projectId: dotenv.env['PROJECT_ID']!,
+      storageBucket: dotenv.env['STORAGE_BUCKET'],
+      iosBundleId: dotenv.env['IOS_BUNDLE_ID'],
+    );
+  }
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyARg7T6MUK6nl2XP05dZkI3cuLBzcHrIu4',
-    appId: '1:460587572384:web:a674ca13b52330de983dc5',
-    messagingSenderId: '460587572384',
-    projectId: 'doodlenote-eaf2d',
-    authDomain: 'doodlenote-eaf2d.firebaseapp.com',
-    storageBucket: 'doodlenote-eaf2d.firebasestorage.app',
-    measurementId: 'G-WJY254YR5J',
-  );
+  static FirebaseOptions get windows {
+    return FirebaseOptions(
+      apiKey: dotenv.env['WINDOWS_API_KEY']!,
+      appId: dotenv.env['WINDOWS_APP_ID']!,
+      messagingSenderId: dotenv.env['MESSAGING_SENDER_ID']!,
+      projectId: dotenv.env['PROJECT_ID']!,
+      authDomain: dotenv.env['WEB_AUTH_DOMAIN'],
+      storageBucket: dotenv.env['STORAGE_BUCKET'],
+      measurementId: dotenv.env['WINDOWS_MEASUREMENT_ID'],
+    );
+  }
 }

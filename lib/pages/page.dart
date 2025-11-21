@@ -6,6 +6,8 @@ import 'package:doodle_note/providers/config_data.dart';
 import 'package:doodle_note/models/notes.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
+import 'package:doodle_note/services/cloud_service.dart';
+import 'package:doodle_note/providers/config_data.dart';
 
 class NotePageScreen extends StatefulWidget {
   const NotePageScreen({super.key, required this.notaPage});
@@ -48,13 +50,30 @@ class _NotePageScreen extends State<NotePageScreen> {
   }
 }
 
+final CloudService _cloudService = CloudService();
+
   void _deleteNote() async {
     try {
       await _storage.deleteNote(_currentNote);
-      Navigator.pop(context, true); 
-    } catch (e){
+
+      if (mounted) {
+        bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
+
+        if (isAutoSyncOn) {
+
+          _cloudService.uploadNotes();
+          print(" Nota eliminada y sincronización iniciada...");
+        }
+        
+        Navigator.pop(context, true); 
+      }
+
+
+    } catch (e) {
       print('Error deleting note: $e');
-      Navigator.pop(context, false); 
+      if (mounted) {
+        Navigator.pop(context, false);
+      }
     }
   }
 

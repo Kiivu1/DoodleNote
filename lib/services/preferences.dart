@@ -84,4 +84,14 @@ class SharedPreferencesService{
     return prefs.getBool(_showDateKey) ?? true;
   }
 
+  Future<void> saveAutoSync(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_sync', value);
+  }
+
+  Future<bool> loadAutoSync() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('auto_sync') ?? false; 
+  }
+
 }

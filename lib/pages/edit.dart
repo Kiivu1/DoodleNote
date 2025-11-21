@@ -6,6 +6,8 @@ import 'package:doodle_note/providers/config_data.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:doodle_note/services/note_storage.dart';
+import 'package:doodle_note/services/cloud_service.dart';
+import 'package:doodle_note/providers/config_data.dart';
 
 class EditPage extends StatefulWidget{
   const EditPage({super.key, required this.notaEdited});
@@ -79,24 +81,39 @@ class _EditPage extends State<EditPage>{
     });
   }
 
+  final CloudService _cloudService = CloudService();
+
   void _saveAndGoBack() async {
 
     final int noteId = widget.notaEdited.id == 0 ? _getNewId() : widget.notaEdited.id;
 
     final Note updatedNote = Note(
-      id: noteId,                                       //Nuevo ID o el de siempre
+      id: noteId,
       noteTitle: _noteTitle,
-      imagePath: _currentImagePath,                     //nuevo path al archivo
-      creationDate: widget.notaEdited.creationDate,     
-      editCreationDate: DateTime.now().toString(),      //Actualizar ultima fecha
-      tags: _tags.isEmpty ? null : _tags,               //No importante, puede pasar
-      tabs: _tabs.isEmpty ? null : _tabs,               // No importante, puede pasar
+      imagePath: _currentImagePath,
+      creationDate: widget.notaEdited.creationDate,
+      editCreationDate: DateTime.now().toString(),
+      tags: _tags.isEmpty ? null : _tags,
+      tabs: _tabs.isEmpty ? null : _tabs,
     );
 
     await _storage.saveNote(updatedNote);
+
+    if (mounted) {
+      bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
+
+      if (isAutoSyncOn) {
+        _cloudService.uploadNotes();
+        print("Subida automática iniciada...");
+      }
+    }
+    // ---------------------------------------------------------
+
     await Future.delayed(const Duration(milliseconds: 100));
 
-    Navigator.pop(context, updatedNote);
+    if (mounted) {
+      Navigator.pop(context, updatedNote);
+    }
   }
 
   void _goBackWithoutSaving() {

@@ -12,25 +12,24 @@ class NoteStorage {
   static const String _notesSubFolder = 'Notes';
   static const String _imageSubFolder = 'Images';
 
-  Future<String> _localPath() async{
+  Future<String> _localPath() async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
   }
 
-  // Obtener directorio para las notas, JSON
-  Future<Directory> get _localNotesDirectory async{
+  // Obtener directorio para las notas (JSON)
+  Future<Directory> get _localNotesDirectory async {
     final path = await _localPath();
     final directory = Directory(p.join(path, _folderName, _notesSubFolder));
-    if(!await directory.exists()){
+    if (!await directory.exists()) {
       await directory.create(recursive: true);
     }
     return directory;
   }
 
-  // Obtener directorio de imagenes
+  // Obtener directorio de imágenes
   Future<Directory> get _localImagesDirectory async {
     final path = await _localPath();
-    //    /Documents/DoodleNote/Images
     final directory = Directory(p.join(path, _folderName, _imageSubFolder));
     if (!await directory.exists()) {
       await directory.create(recursive: true);
@@ -38,49 +37,54 @@ class NoteStorage {
     return directory;
   }
 
-  // GUARDAR------------------------------
-  Future<void> saveNote(Note note) async{
-    // 1. Set up JSON file destination (Corrected to use _localNotesDirectory and .json extension)
+  // --- 1. GUARDAR NOTA INDIVIDUAL (Uso normal de la App) ---
+  Future<void> saveNote(Note note) async {
     final notesDirectory = await _localNotesDirectory;
     final String fileName = '${note.id}.json'; 
     final File file = File(p.join(notesDirectory.path, fileName));
 
     String? newImagePath = note.imagePath;
 
-    // 2. Handle Image: Copy to persistent app storage & Save to Gallery
+    // Lógica de Imágenes: Copiar a carpeta persistente y guardar en Galería
     if (newImagePath != null && !newImagePath.startsWith('assets/')) {
       final File originalFile = File(newImagePath);
-      final imageDir = await _localImagesDirectory;
-      final String imageExtension = p.extension(newImagePath);
       
-      // Create a new unique file name for persistent storage
-      final String newImageFileName = '${note.id}_${DateTime.now().microsecondsSinceEpoch}$imageExtension';
-      final String persistentFilePath = p.join(imageDir.path, newImageFileName);
-
-      // A. Copy image to persistent app storage
-      await originalFile.copy(persistentFilePath);
-      newImagePath = persistentFilePath; // Update the path to the persistent location
-
-      // B. Save a copy of the image to the public gallery
-      try {
-        // Read bytes from the newly copied persistent file
-        final File fileToSave = File(persistentFilePath);
-        final Uint8List bytes = await fileToSave.readAsBytes();
+      // Verificamos que el archivo original exista antes de copiar
+      if (await originalFile.exists()) {
+        final imageDir = await _localImagesDirectory;
+        final String imageExtension = p.extension(newImagePath);
         
-        await ImageGallerySaverPlus.saveImage(
-          bytes, 
-          name: note.noteTitle, 
-        );
-      } catch (e) {
-        print('Error saving image to gallery: $e');
+        // Si la imagen ya está en nuestra carpeta, no la duplicamos innecesariamente
+        // (A menos que quieras guardar copias nuevas al editar)
+        if (!p.isWithin(imageDir.path, newImagePath)) {
+            final String newImageFileName = '${note.id}_${DateTime.now().microsecondsSinceEpoch}$imageExtension';
+            final String persistentFilePath = p.join(imageDir.path, newImageFileName);
+
+            // A. Copiar imagen a almacenamiento de la app
+            await originalFile.copy(persistentFilePath);
+            newImagePath = persistentFilePath; 
+
+            // B. Guardar copia en la galería pública
+            try {
+              final File fileToSave = File(persistentFilePath);
+              final Uint8List bytes = await fileToSave.readAsBytes();
+              
+              await ImageGallerySaverPlus.saveImage(
+                bytes, 
+                name: 'DoodleNote_${note.noteTitle}', 
+              );
+            } catch (e) {
+              print('Error saving image to gallery: $e');
+            }
+        }
       }
     }
 
-    // 3. Save JSON Note data
+    // Guardar JSON
     final Note noteToSave = Note(
       id: note.id,
       noteTitle: note.noteTitle,
-      imagePath: newImagePath, // Use the persistent path
+      imagePath: newImagePath, 
       creationDate: note.creationDate,
       editCreationDate: note.editCreationDate,
       tags: note.tags,
@@ -91,53 +95,89 @@ class NoteStorage {
     await file.writeAsString(jsonString);
   }
 
-  Future<void> deleteNote(Note note) async{
+  // --- 2. ELIMINAR NOTA ---
+  Future<void> deleteNote(Note note) async {
     try {
-    
-    //Borrar la nota
-    final notesDirectory = await _localNotesDirectory;
-    final String fileName = '${note.id}.json';
-    final File noteFile = File(p.join(notesDirectory.path, fileName));
-    
-    if (await noteFile.exists()) {
-      await noteFile.delete();
-      print('Note JSON deleted: ${noteFile.path}');
-    }
-
-    //Borrar imagen
-    if (note.imagePath != null && !note.imagePath!.startsWith('assets/')) {
-      final File imageFile = File(note.imagePath!);
-      if (await imageFile.exists()) {
-        await imageFile.delete();
-        print('Note Image deleted: ${imageFile.path}');
+      // Borrar JSON
+      final notesDirectory = await _localNotesDirectory;
+      final String fileName = '${note.id}.json';
+      final File noteFile = File(p.join(notesDirectory.path, fileName));
+      
+      if (await noteFile.exists()) {
+        await noteFile.delete();
+        print('Note JSON deleted: ${noteFile.path}');
       }
+
+      // Borrar imagen asociada (si es local)
+      if (note.imagePath != null && !note.imagePath!.startsWith('assets/')) {
+        final File imageFile = File(note.imagePath!);
+        if (await imageFile.exists()) {
+          await imageFile.delete();
+          print('Note Image deleted: ${imageFile.path}');
+        }
+      }
+    } catch (e) {
+      print('Error deleting note with ID ${note.id}: $e');
+      rethrow;
     }
-  } catch (e) {
-    print('Error deleting note with ID ${note.id}: $e');
-    rethrow;
-  }
   }
 
+  // --- 3. LEER TODAS LAS NOTAS ---
   Future<List<Note>> readAllNotes() async {
     final directory = await _localNotesDirectory; 
     final List<Note> notes = [];
 
-    final files = directory.listSync().whereType<File>();
+    if (await directory.exists()) {
+      final files = directory.listSync().whereType<File>();
 
-    for (final file in files){
-      if(file.path.endsWith('.json')){
-        try{
-          final jsonString = await file.readAsString();
-          final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
-          final note = Note.fromJson(jsonMap);
-          notes.add(note);
-        } catch (e){
-          print('Error leyendo archivo ${file.path}: $e');
+      for (final file in files) {
+        if (file.path.endsWith('.json')) {
+          try {
+            final jsonString = await file.readAsString();
+            final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
+            final note = Note.fromJson(jsonMap);
+            notes.add(note);
+          } catch (e) {
+            print('Error leyendo archivo ${file.path}: $e');
+          }
         }
       }
     }
 
-    notes.sort((a,b)=> b.editCreationDate.compareTo(a.editCreationDate));
+    notes.sort((a, b) => b.editCreationDate.compareTo(a.editCreationDate));
     return notes;
+  }
+
+  // ---------------------------------------------------------
+  // MÉTODOS NUEVOS PARA CLOUD SYNC (Necesarios para ConfigurationPage)
+  // ---------------------------------------------------------
+
+  // 4. Borrar todas las notas locales (Limpieza antes de restaurar)
+  Future<void> deleteAllNotes() async {
+    final directory = await _localNotesDirectory;
+    if (await directory.exists()) {
+      final files = directory.listSync().whereType<File>();
+      for (final file in files) {
+        if (file.path.endsWith('.json')) {
+          await file.delete();
+        }
+      }
+    }
+  }
+
+  // 5. Guardar la lista completa que viene de Firebase
+  Future<void> saveAllNotes(List<Note> notes) async {
+    // Limpiamos primero para evitar duplicados o notas viejas
+    await deleteAllNotes();
+
+    final directory = await _localNotesDirectory;
+
+    for (var note in notes) {
+      final String fileName = '${note.id}.json';
+      final File file = File(p.join(directory.path, fileName));
+      
+      // Escribimos el archivo individualmente tal cual viene de la nube
+      await file.writeAsString(jsonEncode(note.toJson()));
+    }
   }
 }
