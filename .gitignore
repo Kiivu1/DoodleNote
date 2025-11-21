@@ -44,8 +44,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+
 # Dotenv
 .env
+
+# 2. Configuración de Firebase
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
 # Archivos de firma Android
 key.properties
 **/*.keystore
