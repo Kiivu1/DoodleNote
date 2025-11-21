@@ -7,7 +7,8 @@ import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/models/notes.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
-
+// Idiomas
+import 'package:doodle_note/l10n/app_localizations.dart';
 
 class SearchPage extends StatefulWidget{
   const SearchPage({super.key});
@@ -87,6 +88,8 @@ class _SearchPage extends State<SearchPage>{
   }
 
   SliverToBoxAdapter _searchBarSliver(){
+    final l10n = AppLocalizations.of(context)!;
+    
     return SliverToBoxAdapter(
       child: Padding(
         padding: EdgeInsets.all(6),
@@ -94,7 +97,7 @@ class _SearchPage extends State<SearchPage>{
           decoration: InputDecoration(
             border: OutlineInputBorder( borderRadius: BorderRadius.circular(10)),
             prefixIcon: Icon(Icons.search),
-            hintText: 'Search DoodleNote',
+            hintText: l10n.searchHint, // TRADUCIDO
             filled: true,
             fillColor: Colors.white,
           ),
@@ -169,7 +172,7 @@ class _SearchPage extends State<SearchPage>{
       child: Padding(padding: const EdgeInsets.all(1),
         child: Card( margin: EdgeInsets.all(2), color: Colors.pinkAccent,
           child: ListTile(
-            onTap: ()=> _goToPage(note),                                                                                      //AQUI PONER METODO DE NAVEGADOR
+            onTap: ()=> _goToPage(note),                                                                                             
             leading: imageVisible ? _imageContainer(note.imagePath): null,
             title: Text(note.noteTitle, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: fontTitleSize, fontWeight: FontWeight.bold , color: Colors.black)),
             subtitle: Column(
@@ -189,7 +192,8 @@ class _SearchPage extends State<SearchPage>{
 
   @override
   Widget build(BuildContext context){
-
+    final l10n = AppLocalizations.of(context)!;
+    
     var logger = Logger();
     logger.d("build compiladp");
 
@@ -201,7 +205,7 @@ class _SearchPage extends State<SearchPage>{
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             Image.asset('assets/images/DNSearchLogo.png', fit: BoxFit.cover, height: 40),
-            Expanded(child: Text('Search', style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
+            Expanded(child: Text(l10n.search, style: TextStyle(fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
           ]
         )
       ),
@@ -226,7 +230,7 @@ class _SearchPage extends State<SearchPage>{
                 child: Padding(
                   padding: EdgeInsets.all(50),
                   child: Text(
-                  _searchText.isEmpty ? 'No notes found yet.' : 'No results found for "$_searchText".',
+                  _searchText.isEmpty ? l10n.noNotes : '${l10n.noResults} "$_searchText".',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white70, fontSize: 18),
                 )

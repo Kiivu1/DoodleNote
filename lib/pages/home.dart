@@ -11,6 +11,8 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:doodle_note/pages/about.dart';
+// IMPORTAR IDIOMAS
+import 'package:doodle_note/l10n/app_localizations.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -74,8 +76,17 @@ class _MyHomePageState extends State<MyHomePage> {
     await Navigator.push( context, MaterialPageRoute(builder: (context) => EditPage(notaEdited: noteToEdit)), );
     _loadNotes();
   }
-  void _goToConfig() async {await Navigator.push(context, MaterialPageRoute(builder: (context) => ConfigurationPage(title: 'Configuration')), ); _loadNotes(); }
-  void _goToAbout() async {await Navigator.push(context, MaterialPageRoute(builder: (context)=> AboutPage()), ); _loadNotes(); }
+  
+  // Nota: Usamos Textos traducidos al pasar el titulo, aunque ConfigurationPage ya lo maneja internamente
+  void _goToConfig() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => ConfigurationPage(title: 'Configuration')), ); 
+    _loadNotes(); 
+  }
+  
+  void _goToAbout() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context)=> AboutPage()), ); 
+    _loadNotes(); 
+  }
 
   //REFACTORS------------------------------------------------------
   Widget _imageContainer(String? imagePath, {double size = 40}){
@@ -190,6 +201,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // Variable corta para textos
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 57, 29, 82),
       body: RefreshIndicator(
@@ -205,7 +218,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Image.asset('assets/images/DNLogo_Home.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
-                  Expanded(child: Text('DoodleNote', style: TextStyle(fontFamily: fontFamilyText, fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
+                  // USAMOS l10n PARA EL TÍTULO
+                  Expanded(child: Text(l10n.appTitle, style: TextStyle(fontFamily: fontFamilyText, fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
                 ]
               )
             ),
@@ -214,7 +228,8 @@ class _MyHomePageState extends State<MyHomePage> {
             if (!_isLoading)
               ..._notes.map((note) => _noteContent(note)).toList(),
             if (!_isLoading && _notes.isEmpty)
-              SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(50), child: Text('No notes found. Create a new one!', style: TextStyle(fontFamily: fontFamilyText,color: Colors.white, fontSize: fontDateSize))))),
+              // USAMOS l10n PARA MENSAJE VACÍO
+              SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(50), child: Text(l10n.noNotes, style: TextStyle(fontFamily: fontFamilyText,color: Colors.white, fontSize: fontDateSize))))),
           ],
         ),
       ),
@@ -230,28 +245,32 @@ class _MyHomePageState extends State<MyHomePage> {
           SpeedDialChild(
             child: const Icon(Icons.add, color: Colors.white),
             backgroundColor: Colors.green,
-            label: 'Create Note',
+            // USAMOS l10n
+            label: l10n.createNote,
             labelStyle: const TextStyle(fontWeight: FontWeight.w500),
             onTap: () => _goToEdit(),
           ),
           SpeedDialChild(
             child: const Icon(Icons.search, color: Colors.white),
             backgroundColor: Colors.blueAccent,
-            label: 'Search',
+            // USAMOS l10n
+            label: l10n.search,
             labelStyle: const TextStyle(fontWeight: FontWeight.w500),
             onTap: () => _goToSearch(),
           ),
           SpeedDialChild(
             child: const Icon(Icons.settings, color: Colors.white),
             backgroundColor: Colors.orange,
-            label: 'Configuration',
+            // USAMOS l10n
+            label: l10n.settingsTitle,
             labelStyle: const TextStyle(fontWeight: FontWeight.w500),
             onTap: () => _goToConfig(),
           ),
           SpeedDialChild(
             child: const Icon(Icons.person, color: Colors.white),
             backgroundColor: Colors.purple,
-            label: 'About',
+            // USAMOS l10n
+            label: l10n.about,
             labelStyle: const TextStyle(fontWeight: FontWeight.bold),
             onTap: () => _goToAbout(),
           ),

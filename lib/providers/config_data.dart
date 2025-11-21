@@ -5,6 +5,7 @@ class ConfigurationData extends ChangeNotifier {
 
   final SharedPreferencesService _sharedPrefs;
 
+  // --- Variables de Estado ---
   bool _darkMode = false;
   int _sizeFont = 14;
   int _sizeFontTitle = 24; 
@@ -12,11 +13,10 @@ class ConfigurationData extends ChangeNotifier {
   int _menuLayout = 0;
   bool _showImage = true;
   bool _showDate = true;
-  
-  // NUEVO: Variable para sincronización automática
   bool _autoSync = false; 
+  Locale? _appLocale; // Variable para el idioma (null = automático)
 
-  // GETTERS
+  // --- Getters ---
   bool get darkMode => _darkMode;
   int get sizeFont => _sizeFont;
   int get sizeFontTitle => _sizeFontTitle;
@@ -24,15 +24,12 @@ class ConfigurationData extends ChangeNotifier {
   int get menuLayout => _menuLayout;
   bool get showImage => _showImage;
   bool get showDate => _showDate;
-  
-  // NUEVO: Getter para autoSync
   bool get autoSync => _autoSync;
+  Locale? get appLocale => _appLocale; // Getter del idioma
 
-  // SETTERS
-  // Nota: He agregado la persistencia (guardado) solo al autoSync como pediste, 
-  // pero te recomiendo agregarla a los demás setters en el futuro (ej: _sharedPrefs.saveFontSize(sizeFont))
-  // para que no se pierdan los cambios al cerrar la app.
+  // --- Setters ---
   
+  // Nota: Recuerda agregar _sharedPrefs.save... a estos setters si quieres persistencia en todo.
   void setFontSize(int sizeFont){ this._sizeFont = sizeFont; notifyListeners(); }
   void setFontType(int typeFont){ this._typeFont = typeFont; notifyListeners(); }
   void setFontTitleSize(int sizeFontTitle){ this._sizeFontTitle = sizeFontTitle; notifyListeners(); }
@@ -41,11 +38,20 @@ class ConfigurationData extends ChangeNotifier {
   void setShowImage(bool showImage){ this._showImage = showImage; notifyListeners(); }
   void setShowDate(bool showDate){ this._showDate = showDate; notifyListeners(); }
 
-  // NUEVO: Setter para AutoSync (Guarda en disco y notifica)
+  // Setter para AutoSync
   void setAutoSync(bool value) { 
     _autoSync = value; 
     _sharedPrefs.saveAutoSync(value); 
     notifyListeners(); 
+  }
+
+  // Setter para Idioma (Nuevo)
+  void setAppLocale(Locale? locale){
+    _appLocale = locale;
+    // Guardamos el código ('es', 'en') o 'auto' si es null
+    String code = locale?.languageCode ?? 'auto';
+    _sharedPrefs.saveLanguage(code);
+    notifyListeners();
   }
 
   String? get FontFamily {
@@ -70,8 +76,16 @@ class ConfigurationData extends ChangeNotifier {
     _showImage = await _sharedPrefs.loadShowIcon();
     _showDate = await _sharedPrefs.loadShowDate();
     
-    // NUEVO: Cargar configuración de AutoSync
+  
     _autoSync = await _sharedPrefs.loadAutoSync();
+
+    
+    String langCode = await _sharedPrefs.loadLanguage();
+    if (langCode == 'auto') {
+      _appLocale = null; 
+    } else {
+      _appLocale = Locale(langCode);
+    }
     
     notifyListeners();
   }

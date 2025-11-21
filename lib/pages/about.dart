@@ -1,16 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-// Asegúrate de que las importaciones de provider y config_data sean correctas en tu proyecto
 import 'package:provider/provider.dart';
 import 'package:doodle_note/providers/config_data.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart' show rootBundle;
-
-// *** Nota: He añadido un Mock de ConfigurationData y _devEmail para que el código sea ejecutable 
-// si no tienes tu provider y email definidos, pero asumo que en tu proyecto sí existen. ***
+// Importamos localizaciones
+import 'package:doodle_note/l10n/app_localizations.dart';
 
 const String _devEmail = 'ivanobandoa@gmail.com'; 
-// -----------------------------------------------------------------------------------------
+
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
 
@@ -19,7 +17,6 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutCreator extends State<AboutPage> {
-  // Configuración. Estos deben estar correctos y el Provider disponible
   double get fontTitleSize => context.watch<ConfigurationData>().sizeFontTitle.toDouble();
   double get fontTextSize => context.watch<ConfigurationData>().sizeFont.toDouble();
   String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
@@ -49,14 +46,11 @@ class _AboutCreator extends State<AboutPage> {
       final String jsonString = await rootBundle.loadString('assets/preguntas.json');
       final Map<String, dynamic> decodedData = jsonDecode(jsonString);
 
-      // Conversión de 'value' a double para el Slider
       if (decodedData.containsKey('uso')) {
         for (var question in decodedData['uso']) { 
-          // Se asegura que 'value' sea un double para el Slider
           question['value'] = (question['value'] is int ? question['value'].toDouble() : question['value']); 
         }
       }
-      // Inicialización de 'respuesta' en las otras secciones
       if (decodedData.containsKey('opinion')) {
         for (var question in decodedData['opinion']) { question['respuesta'] = ''; }
       }
@@ -69,42 +63,46 @@ class _AboutCreator extends State<AboutPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error al cargar o parsear preguntas.json: $e'); 
+      print('Error al cargar preguntas.json: $e'); 
       setState(() {
         _isLoading = false; 
-        _errorMessage = 'No se pudo recargar el formulario, INtente de nuevo';
+        // El mensaje se traduce en el build, aquí solo marcamos error
+        _errorMessage = 'ERROR'; 
       });
     }
   }
 
   Future<void> _sendEmail() async {
-    if (_feedbackData == null) { return; }
+    if (_feedbackData == null) return;
+    
+    // Obtenemos textos traducidos para el cuerpo del correo
+    final l10n = AppLocalizations.of(context)!;
 
-    // si se puede enviar
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      String emailBody = 'Feedback de DoodleNote de: ${_userName.isEmpty ? 'Anónimo' : _userName} ($_userEmail)\n\n';      
-      emailBody += '--- Seccion de Uso (Calificaciones) ---\n';
+      final String finalName = _userName.isEmpty ? l10n.anonymous : _userName;
       
-      //Formateo de datos
+      String emailBody = '${l10n.emailBodyHeader} $finalName ($_userEmail)\n\n';      
+      
+      emailBody += '${l10n.sectionUsageHeader}\n';
       if (_feedbackData!['uso'] is List) {
         for (var question in _feedbackData!['uso']) {
-          emailBody += 'P: ${question['pregunta']}\n -> Calificación: ${question['value'].round()}\n';
+          emailBody += '${l10n.qLabel} ${question['pregunta']}\n -> ${l10n.rateLabel} ${question['value'].round()}\n';
         }
       }
       
-      emailBody += '\n\n--- Seccion de Opinión (Textual) ---\n';
+      emailBody += '\n\n${l10n.sectionOpinionHeader}\n';
       if (_feedbackData!['opinion'] is List) {
         for (var question in _feedbackData!['opinion']) {
-          emailBody += 'P: ${question['pregunta']}\n -> Respuesta: ${question['respuesta'].isEmpty ? 'No respondida' : question['respuesta']}\n';
+          emailBody += '${l10n.qLabel} ${question['pregunta']}\n -> ${l10n.aLabel} ${question['respuesta'].isEmpty ? l10n.notAnswered : question['respuesta']}\n';
         }
       }
       
-      emailBody += '\n\n--- Veredicto Final ---\n';
+      emailBody += '\n\n${l10n.sectionVerdictHeader}\n';
       if (_feedbackData!['veredicto'] is List) {
         for (var question in _feedbackData!['veredicto']) {
-          emailBody += 'P: ${question['pregunta']}\n -> Respuesta: ${question['respuesta'].isEmpty ? 'No respondida' : question['respuesta']}\n';
+          emailBody += '${l10n.qLabel} ${question['pregunta']}\n -> ${l10n.aLabel} ${question['respuesta'].isEmpty ? l10n.notAnswered : question['respuesta']}\n';
         }
       }
       
@@ -112,19 +110,17 @@ class _AboutCreator extends State<AboutPage> {
         scheme: 'mailto',
         path: _devEmail,
         query: encodeQueryParameters(<String, String>{
-          'subject': 'Feedback de Usuario - DoodleNote',
+          'subject': l10n.emailSubject,
           'body': emailBody,
         }),
       );
 
-      //enviar el email
       final bool launched = await launchUrl(emailLaunchUri, mode: LaunchMode.platformDefault);
       
-      //si no se puede enviar, tirar mensaje de error
       if (!launched) {
          if (context.mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('No se pudo abrir la aplicación de correo. Copia el email: $_devEmail')),
+             SnackBar(content: Text(l10n.errorEmailOpen(_devEmail))),
            );
          }
       }
@@ -132,6 +128,8 @@ class _AboutCreator extends State<AboutPage> {
   }
 
   Widget _buildErrorState() {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(30.0),
@@ -141,13 +139,13 @@ class _AboutCreator extends State<AboutPage> {
             const Icon(Icons.error_outline, color: Colors.red, size: 40),
             const SizedBox(height: 10),
             Text(
-              'Error al cargar el formulario de feedback.',
+              l10n.errorLoading, // TRADUCIDO
               textAlign: TextAlign.center,
               style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text(
-              _errorMessage ?? 'Error desconocido.',
+              _errorMessage == 'ERROR' ? l10n.errorLoading : (_errorMessage ?? l10n.errorUnknown),
               textAlign: TextAlign.center,
               style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize - 2, color: Colors.black54),
             ),
@@ -155,7 +153,7 @@ class _AboutCreator extends State<AboutPage> {
             ElevatedButton.icon(
               onPressed: _loadJsonData,
               icon: const Icon(Icons.refresh),
-              label: const Text('Recargar Formulario'),
+              label: Text(l10n.reloadForm), // TRADUCIDO
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor, 
                 foregroundColor: Colors.white,
@@ -167,7 +165,6 @@ class _AboutCreator extends State<AboutPage> {
     );
   }
 
-  // Helper para codificar los parámetros de la URL
   String? encodeQueryParameters(Map<String, String> params) {
     return params.entries.map((e) => 
       '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&');
@@ -188,6 +185,8 @@ class _AboutCreator extends State<AboutPage> {
   }
 
   Widget _buildFeedbackForm() {
+    final l10n = AppLocalizations.of(context)!; // Variable idiomas
+
     if (_isLoading) {
       return const Center(child: Padding(
         padding: EdgeInsets.all(30.0),
@@ -210,29 +209,29 @@ class _AboutCreator extends State<AboutPage> {
             child: Column( 
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text('Encuesta de Satisfacción y Feedback', textAlign: TextAlign.center, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize + 4, fontWeight: FontWeight.bold), ),
+                Text(l10n.feedbackTitle, textAlign: TextAlign.center, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize + 4, fontWeight: FontWeight.bold), ),
                 const Divider(height: 30, thickness: 2),
 
-                Text( '0. Datos de Contacto', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold),),
+                Text(l10n.contactSection, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold),),
                 const SizedBox(height: 15),
                 _buildContactFields(), 
                 
                 const Divider(height: 40),
-                Text('1. Uso y Calificación',style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold),),
+                Text(l10n.usageSection, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold),),
                 const SizedBox(height: 15),
                 ..._feedbackData!['uso'].map<Widget>((question) { return _buildUsageSlider(question); }).toList(),
 
                 const Divider(height: 40),
-                Text( '2. Opiniones', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold), ),
+                Text(l10n.opinionSection, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold), ),
                 const SizedBox(height: 15),
                 ..._feedbackData!['opinion'].map<Widget>((question) { return _buildTextInput(question, 3); }).toList(),
-                Text( '3. Opinión final', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold), ),
+                Text(l10n.verdictSection, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold), ),
                 ..._feedbackData!['veredicto'].map<Widget>((question) { return _buildTextInput(question, 4); }).toList(),
 
                 ElevatedButton.icon(
                   onPressed: _sendEmail,
                   icon: const Icon(Icons.send),
-                  label: const Text('Enviar Feedback por Email'),
+                  label: Text(l10n.sendEmailBtn),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     backgroundColor: Theme.of(context).primaryColor, 
@@ -244,7 +243,7 @@ class _AboutCreator extends State<AboutPage> {
                 OutlinedButton.icon(
                   onPressed: _loadJsonData,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Recargar Formulario'),
+                  label: Text(l10n.reloadForm),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     side: BorderSide(color: Theme.of(context).primaryColor, width: 2),
@@ -253,7 +252,8 @@ class _AboutCreator extends State<AboutPage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text( 'Al presionar, se abrirá tu aplicación de correo para enviar los resultados a $_devEmail.', textAlign: TextAlign.center, style: TextStyle(fontSize: fontTextSize - 2, color: Colors.black54), ),
+                // Usamos texto traducido con parámetro
+                Text( l10n.emailDisclaimer(_devEmail), textAlign: TextAlign.center, style: TextStyle(fontSize: fontTextSize - 2, color: Colors.black54), ),
               ],
             ),
           ),
@@ -263,39 +263,42 @@ class _AboutCreator extends State<AboutPage> {
   }
 
   Widget _buildContactFields() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       children: [
         TextFormField(
-          decoration: const InputDecoration(
-            labelText: 'Tu Nombre (Opcional)',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.person),
+          decoration: InputDecoration(
+            labelText: l10n.nameLabel, // TRADUCIDO
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.person),
           ),
-          onSaved: (value) => _userName = value ?? 'Anónimo',
+          onSaved: (value) => _userName = value ?? l10n.anonymous,
         ),
         const SizedBox(height: 10),
         TextFormField(
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'Tu Email',
-            hintText: 'ejemplo@correo.com',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.email),
+          decoration: InputDecoration(
+            labelText: l10n.emailLabel, // TRADUCIDO
+            hintText: l10n.emailHint,
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.email),
           ),
           validator: (value) {
             if (value == null || value.isEmpty || !value.contains('@')) {
-              return 'Por favor, ingresa un email válido.';
+              return l10n.emailError; // TRADUCIDO
             }
             return null;
           },
-          onSaved: (value) => _userEmail = value ?? 'No Proporcionado',
+          onSaved: (value) => _userEmail = value ?? l10n.notProvided,
         ),
       ],
     );
   }
   
-  // Widget para simplificar cada pregunta con Slider ('uso')
   Widget _buildUsageSlider(Map<String, dynamic> question) {
+    // Nota: min/max description siguen saliendo del JSON, si quieres traducirlos
+    // tendrías que cambiar la estructura del JSON o hacer lógica compleja aquí.
     String minDescription = question['min'].toString().split(':').last.trim();
     String maxDescription = question['max'].toString().split(':').last.trim();
 
@@ -367,9 +370,9 @@ class _AboutCreator extends State<AboutPage> {
           Text(question['pregunta'], style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize + 2, fontWeight: FontWeight.w600)),
           TextFormField(
             maxLines: maxLines, 
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               alignLabelWithHint: true,
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(),
               floatingLabelBehavior: FloatingLabelBehavior.always, 
             ),
             onChanged: (value) {
@@ -383,10 +386,12 @@ class _AboutCreator extends State<AboutPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
-        title: Text('Acerca de y Feedback', style: TextStyle(color: Colors.white, fontFamily: fontFamilyText, fontSize: fontTitleSize), ),
+        title: Text(l10n.aboutTitle, style: TextStyle(color: Colors.white, fontFamily: fontFamilyText, fontSize: fontTitleSize), ),
       ),
       body: CustomScrollView(
         
@@ -394,8 +399,8 @@ class _AboutCreator extends State<AboutPage> {
           SliverList(
             delegate: SliverChildListDelegate(
               [
-                _buildAboutContent('Acerca de DoodleNote', 'DoodleNote es una aplicación de notas, móvil, la cual tiene como objetivo el poder facilitar la organización y la personalización de estas.' ),
-                _buildAboutContent('Acerca del Desarrollador', 'Ivan Eduardo Obando Alcayaga, es un estudiante de la Carrera de videojuegos de la universidad de Talca.\nSu misión con esta app es el poder ayudar a la hora de creación de notas con un sistema que es más atractivo visualmente, además de poder ser personalizable.', ),
+                _buildAboutContent(l10n.aboutAppTitle, l10n.aboutAppDesc),
+                _buildAboutContent(l10n.aboutDevTitle, l10n.aboutDevDesc),
                 const Divider(height: 20, thickness: 5, indent: 16, endIndent: 16),
                 _buildFeedbackForm(),
                 const SizedBox(height: 20),

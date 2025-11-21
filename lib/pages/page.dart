@@ -1,4 +1,3 @@
-import 'package:doodle_note/services/note_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:doodle_note/pages/edit.dart';
 import 'package:provider/provider.dart';
@@ -6,8 +5,11 @@ import 'package:doodle_note/providers/config_data.dart';
 import 'package:doodle_note/models/notes.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
+// Servicios
+import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/services/cloud_service.dart';
-import 'package:doodle_note/providers/config_data.dart';
+// Idiomas
+import 'package:doodle_note/l10n/app_localizations.dart';
 
 class NotePageScreen extends StatefulWidget {
   const NotePageScreen({super.key, required this.notaPage});
@@ -20,6 +22,7 @@ class NotePageScreen extends StatefulWidget {
 
 class _NotePageScreen extends State<NotePageScreen> {
   final NoteStorage _storage = NoteStorage();
+  final CloudService _cloudService = CloudService(); // Instancia Nube
 
   late Note _currentNote;
 
@@ -36,38 +39,36 @@ class _NotePageScreen extends State<NotePageScreen> {
   String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
 
   void _goToEdit() async { 
-  final result = await Navigator.push(
-    context, 
-    MaterialPageRoute(builder: (context) => EditPage(notaEdited: _currentNote)),
-  );
+    final result = await Navigator.push(
+      context, 
+      MaterialPageRoute(builder: (context) => EditPage(notaEdited: _currentNote)),
+    );
 
-  if (result != null && result is Note) {
-    if (context.mounted) {
-      setState(() {
-        _currentNote = result; // _currentNote is updated with the new content
-      });
+    if (result != null && result is Note) {
+      if (context.mounted) {
+        setState(() {
+          _currentNote = result; // Actualizamos la vista con los cambios
+        });
+      }
     }
   }
-}
-
-final CloudService _cloudService = CloudService();
 
   void _deleteNote() async {
     try {
+      // 1. Borrar Local
       await _storage.deleteNote(_currentNote);
 
+      // 2. Auto-Sync (Si está activo)
       if (mounted) {
         bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
 
         if (isAutoSyncOn) {
-
           _cloudService.uploadNotes();
-          print(" Nota eliminada y sincronización iniciada...");
+          print("☁️ Nota eliminada y sincronización iniciada...");
         }
         
         Navigator.pop(context, true); 
       }
-
 
     } catch (e) {
       print('Error deleting note: $e');
@@ -78,21 +79,24 @@ final CloudService _cloudService = CloudService();
   }
 
   void _shareNote() async {
-    final note = _currentNote; //Nota actual
+    final l10n = AppLocalizations.of(context)!; // Para traducir "Creada" y "Editada"
+    final note = _currentNote;
 
     //Formatear mensaje
     StringBuffer shareText = StringBuffer();
     shareText.writeln('${note.noteTitle}');
     shareText.writeln('');
     shareText.writeln('--------------------------------');
-    shareText.writeln('Creada: ${note.creationDate}');
-    shareText.writeln('Editado en: ${note.editCreationDate}');
+    shareText.writeln('${l10n.createdDate}: ${note.creationDate}');
+    shareText.writeln('${l10n.editedDate}: ${note.editCreationDate}');
     shareText.writeln('');
+    
     if (note.tags != null && note.tags!.isNotEmpty) {
-      shareText.writeln('Tags: ${note.tags!.join(', ')}');
+      shareText.writeln('${l10n.tag}s: ${note.tags!.join(', ')}');
       shareText.writeln('-----------------------------------');
     }
     shareText.writeln('');
+    
     if (note.tabs != null) {
       for (var tab in note.tabs!) {
         shareText.writeln('\n-- ${tab.title.toUpperCase()} --');
@@ -100,7 +104,7 @@ final CloudService _cloudService = CloudService();
       }
     }
 
-    List<XFile> filesToShare = [];      //Imagen
+    List<XFile> filesToShare = [];
     String textContent = shareText.toString();
     String subject = 'Doodle Note: ${note.noteTitle}';
     
@@ -108,7 +112,7 @@ final CloudService _cloudService = CloudService();
       final imageFile = File(note.imagePath!);
       if (await imageFile.exists()) {
         filesToShare.add(XFile(note.imagePath!));
-        subject = 'Doodle Note: ${note.noteTitle} (con Imagen)';
+        subject = 'Doodle Note: ${note.noteTitle} (+ Image)';
       }
     }
 
@@ -123,7 +127,7 @@ final CloudService _cloudService = CloudService();
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo compartir la nota: $e')),
+          SnackBar(content: Text('Error sharing: $e')),
         );
       }
     }
@@ -181,26 +185,28 @@ final CloudService _cloudService = CloudService();
   }
 
   void _showDialog() {
+    final l10n = AppLocalizations.of(context)!;
+    
     showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             backgroundColor: Colors.purple[50],
-            title: Text('Delete DoodleNote', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize)),
-            content: Text('Do you want to delete this Note?', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize)),
+            title: Text(l10n.deleteNoteTitle, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize)),
+            content: Text(l10n.deleteNoteContent, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize)),
             actions: <Widget>[
               TextButton(
                 onPressed: (){
                   Navigator.of(context).pop();
                   _deleteNote();
                 } ,
-                child: Text('Delete')
+                child: Text(l10n.delete) // "Eliminar"
               ),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: Text('Cancel')
+                child: Text(l10n.cancel) // "Cancelar"
               )
             ],
           );
@@ -208,6 +214,8 @@ final CloudService _cloudService = CloudService();
   }
 
   Widget _footerButtons() {
+    final l10n = AppLocalizations.of(context)!;
+    
     TextStyle buttonTextStyle = TextStyle(
       fontSize: fontTextSize,
       fontWeight: FontWeight.bold,
@@ -221,7 +229,7 @@ final CloudService _cloudService = CloudService();
           child: TextButton.icon(
             onPressed: _showDialog,
             icon: const Icon(Icons.delete_outline, color: Colors.white),
-            label: const Text('Delete', style: TextStyle(color: Colors.white)),
+            label: Text(l10n.delete, style: TextStyle(color: Colors.white)),
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
@@ -236,7 +244,7 @@ final CloudService _cloudService = CloudService();
           child: TextButton.icon(
             onPressed: _goToEdit,
             icon: const Icon(Icons.edit, color: Colors.white),
-            label: const Text('Edit', style: TextStyle(color: Colors.white)),
+            label: Text(l10n.edit, style: TextStyle(color: Colors.white)),
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
@@ -250,7 +258,7 @@ final CloudService _cloudService = CloudService();
           child: TextButton.icon(
             onPressed: _shareNote,
             icon: const Icon(Icons.share, color: Colors.white),
-            label: const Text('Share', style: TextStyle(color: Colors.white)),
+            label: Text(l10n.share, style: TextStyle(color: Colors.white)),
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
@@ -274,7 +282,6 @@ final CloudService _cloudService = CloudService();
       }
     }
 
-    // Fallback to a default asset if no image is found or path is null
     if (imageProvider == null) {
       imageProvider = const AssetImage('assets/images/DNImage1.png');
     }
@@ -286,24 +293,22 @@ final CloudService _cloudService = CloudService();
           color: const Color.fromARGB(255, 194, 175, 238),
           child: Column(
             children: [
-              if (imageVisible) // Apply visibility check here
+              if (imageVisible) 
               Padding(
                 padding: EdgeInsets.all(6),
                 child: Container(
                   width: double.infinity,
-                  height: 250, // Added a fixed height for better layout
+                  height: 250, 
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white, width: 3),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    // CORRECTED: Use Image widget with the determined ImageProvider
                     child: Image(image: imageProvider, fit: BoxFit.cover),
                   ),
                 ),
               ),
-              // Title Text
               Padding(
                 padding: EdgeInsets.all(12),
                 child: Text( title, style: TextStyle(fontFamily: fontFamilyText , fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),

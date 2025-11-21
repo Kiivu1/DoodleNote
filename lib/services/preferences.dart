@@ -94,4 +94,14 @@ class SharedPreferencesService{
     return prefs.getBool('auto_sync') ?? false; 
   }
 
+  Future<void> saveLanguage(String languageCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language_code', languageCode);
+  }
+
+  Future<String> loadLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('language_code') ?? 'auto';
+  }
+
 }

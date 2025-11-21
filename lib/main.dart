@@ -7,6 +7,9 @@ import 'package:doodle_note/services/preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:doodle_note/firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:doodle_note/l10n/app_localizations.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,10 +37,33 @@ class MyApp extends StatelessWidget {
 
     return ChangeNotifierProvider(
       create: (context) => ConfigurationData(SharedPreferencesService()),
-        child: const MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'DoodleNote',
-        home: MyHomePage(title: 'DoodleNote'),
+      
+      // USAMOS CONSUMER PARA ESCUCHAR CAMBIOS DE IDIOMA
+      child: Consumer<ConfigurationData>(
+        builder: (context, config, child) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'DoodleNote',
+            
+            // --- CONFIGURACIÓN DE IDIOMA ---
+            locale: config.appLocale, // Aquí se inyecta el idioma seleccionado (o null para auto)
+            
+            localizationsDelegates: const [
+              AppLocalizations.delegate, // Tu archivo generado
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            
+            supportedLocales: const [
+              Locale('en'), // Inglés
+              Locale('es'), // Español
+            ],
+            // -------------------------------
+
+            home: const MyHomePage(title: 'DoodleNote'),
+          );
+        },
       ),
     );
   }

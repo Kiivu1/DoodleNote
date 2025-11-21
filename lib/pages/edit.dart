@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/services/cloud_service.dart';
-import 'package:doodle_note/providers/config_data.dart';
+import 'package:doodle_note/l10n/app_localizations.dart'; // IMPORT VITAL
 
 class EditPage extends StatefulWidget{
   const EditPage({super.key, required this.notaEdited});
@@ -35,6 +35,7 @@ class _EditPage extends State<EditPage>{
   late TextEditingController _titleController;
 
   final NoteStorage _storage = NoteStorage();
+  final CloudService _cloudService = CloudService(); // Instancia servicio nube
 
   @override
   void initState(){
@@ -81,8 +82,6 @@ class _EditPage extends State<EditPage>{
     });
   }
 
-  final CloudService _cloudService = CloudService();
-
   void _saveAndGoBack() async {
 
     final int noteId = widget.notaEdited.id == 0 ? _getNewId() : widget.notaEdited.id;
@@ -97,22 +96,21 @@ class _EditPage extends State<EditPage>{
       tabs: _tabs.isEmpty ? null : _tabs,
     );
 
+    // 1. Guardar Local
     await _storage.saveNote(updatedNote);
 
+    // 2. Sincronización Automática
     if (mounted) {
       bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
-
       if (isAutoSyncOn) {
-        _cloudService.uploadNotes();
-        print("Subida automática iniciada...");
+        _cloudService.uploadNotes(); // Sin await para no bloquear UI
       }
     }
-    // ---------------------------------------------------------
 
     await Future.delayed(const Duration(milliseconds: 100));
 
     if (mounted) {
-      Navigator.pop(context, updatedNote);
+        Navigator.pop(context, updatedNote);
     }
   }
 
@@ -170,7 +168,7 @@ class _EditPage extends State<EditPage>{
 
   //REFACTORS ------------------------------------------------
   SliverToBoxAdapter _imageSelection(){
-
+    final l10n = AppLocalizations.of(context)!; // Variable para idiomas
     final String? imagePath = _currentImagePath;
 
     ImageProvider? imageProvider;
@@ -210,11 +208,11 @@ class _EditPage extends State<EditPage>{
                   children: [
                     ElevatedButton(
                       onPressed: _takePhoto,
-                      child: Row(children: [Icon(Icons.photo), Text('Sacar Foto', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize))])),
+                      child: Row(children: [Icon(Icons.photo), Text(l10n.takePhoto, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize))])),
                     SizedBox(width: 10),
                     ElevatedButton(
                       onPressed: _selectFromGallery,
-                      child: Row(children: [Icon(Icons.folder), Text('De Album', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize))]))
+                      child: Row(children: [Icon(Icons.folder), Text(l10n.fromGallery, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTextSize))]))
                   ],
                 )
               )
@@ -347,16 +345,17 @@ class _EditPage extends State<EditPage>{
 
   //DIALOGS------------------------------------
   void _showAddTagDialog() {
+    final l10n = AppLocalizations.of(context)!; // Idiomas
     final TextEditingController tagController = TextEditingController();
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add New Tag'),
+          title: Text(l10n.addTagTitle),
           content: TextField(
             controller: tagController,
             autofocus: true,
-            decoration: const InputDecoration(hintText: 'Enter Tag Name'),
+            decoration: InputDecoration(hintText: l10n.enterTagName),
           ),
           actions: <Widget>[
             TextButton(
@@ -364,9 +363,9 @@ class _EditPage extends State<EditPage>{
                 _addTag(tagController.text);
                 Navigator.pop(context);
               },
-              child: const Text('Add'),
+              child: Text(l10n.add),
             ),
-            TextButton( onPressed: () => Navigator.pop(context), child: const Text('Cancel'), ),
+            TextButton( onPressed: () => Navigator.pop(context), child: Text(l10n.cancel), ),
           ],
         );
       },
@@ -374,13 +373,14 @@ class _EditPage extends State<EditPage>{
   }
 
   void _showAddTabDialog() {
+    final l10n = AppLocalizations.of(context)!; // Idiomas
     final TextEditingController titleController = TextEditingController();
     final TextEditingController bodyController = TextEditingController();
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add New Tab'),
+          title: Text(l10n.addTabTitle),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -388,14 +388,14 @@ class _EditPage extends State<EditPage>{
                 TextField(
                   controller: titleController,
                   autofocus: true,
-                  decoration: const InputDecoration(hintText: 'Enter Tab Title'),
+                  decoration: InputDecoration(hintText: l10n.enterTabTitle),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: bodyController,
                   maxLines: 4,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter Tab Content (Optional)',
+                  decoration: InputDecoration(
+                    hintText: l10n.enterTabContent,
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -408,11 +408,11 @@ class _EditPage extends State<EditPage>{
                 _addTab(titleController.text, bodyController.text);
                 Navigator.pop(context);
               },
-              child: const Text('Add'),
+              child: Text(l10n.add),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
           ],
         );
@@ -421,17 +421,18 @@ class _EditPage extends State<EditPage>{
   }
 
   void _showDialog(){
+    final l10n = AppLocalizations.of(context)!; 
     showDialog(
       context: context,
       builder: (BuildContext context){
         return AlertDialog(
           backgroundColor: Colors.purple[50],
-          title: const Text('Save Progress?'),
-          content: const Text('Want to save this Note?'),
+          title: Text(l10n.saveProgress),
+          content: Text(l10n.wantToSave),
           actions: <Widget>[
-            TextButton(onPressed: ()=> { Navigator.of(context).pop(), _saveAndGoBack()}, child: const Text('Save')),
+            TextButton(onPressed: ()=> { Navigator.of(context).pop(), _saveAndGoBack()}, child: Text(l10n.save)),
             TextButton(onPressed: (){ Navigator.of(context).pop(); } 
-            , child: const Text('Cancel'))
+            , child: Text(l10n.cancel))
           ],
         );
       }
@@ -439,20 +440,21 @@ class _EditPage extends State<EditPage>{
   }
   
   void _showChooseAddDialog(){
+    final l10n = AppLocalizations.of(context)!; 
     showDialog(context: context,
     builder: (BuildContext context){
       return AlertDialog(
           backgroundColor: Colors.purple[50],
-          title: const Text('What do you want to add?'),
+          title: Text(l10n.chooseAdd),
           actions: <Widget>[
             TextButton( onPressed: () => { Navigator.of(context).pop(),_showAddTabDialog(), },
-            child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.tab, color: Colors.indigo[200]), SizedBox(width: 8), Text('Tab'), ],),
+            child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.tab, color: Colors.indigo[200]), SizedBox(width: 8), Text(l10n.tab), ],),
           ),
           TextButton(
             onPressed: () => { Navigator.of(context).pop(), _showAddTagDialog(), },
-            child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.label_outline, color: Colors.blueGrey), SizedBox(width: 8), Text('Tag'), ], ),
+            child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.label_outline, color: Colors.blueGrey), SizedBox(width: 8), Text(l10n.tag), ], ),
           ),
-            TextButton(onPressed: () => {Navigator.of(context).pop()}, child: const Text('Cancel'))
+            TextButton(onPressed: () => {Navigator.of(context).pop()}, child: Text(l10n.cancel))
           ],
         );
       }
@@ -460,17 +462,18 @@ class _EditPage extends State<EditPage>{
   }
 
   void _showLeaveDialog(){
+    final l10n = AppLocalizations.of(context)!; 
     showDialog(
       context: context,
       builder: (BuildContext context){
         return AlertDialog(
           backgroundColor: Colors.purple[50],
-          title: const Text('Leave Without Saving?'),
-          content: const Text('Any unsaved changes will be lost.'),
+          title: Text(l10n.leaveWithoutSaving),
+          content: Text(l10n.leaveLoseChanges),
           actions: <Widget>[
-            TextButton(onPressed: _goBackWithoutSaving, child: const Text('Leave')),
+            TextButton(onPressed: _goBackWithoutSaving, child: Text(l10n.leave)),
             TextButton(onPressed: (){ Navigator.of(context).pop(); } 
-            , child: const Text('Cancel'))
+            , child: Text(l10n.cancel))
           ],
         );
       }
@@ -479,6 +482,7 @@ class _EditPage extends State<EditPage>{
 
   //Add Tabs or Tags, to make sure SpeedDial doesnt make  ----------------------------------
   SliverToBoxAdapter _addTabSliver() {
+    final l10n = AppLocalizations.of(context)!; 
     return SliverToBoxAdapter(
       child: Padding(padding: EdgeInsets.all(1),
         child: Card(
@@ -491,13 +495,13 @@ class _EditPage extends State<EditPage>{
             onTap: () => _showChooseAddDialog(),
             child: Container(
               padding: EdgeInsets.symmetric(vertical: 60, horizontal: 30),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.add_circle_outline, size: 28, color: Colors.white),
                   SizedBox(width: 12),
                   Text(
-                    'Tap to Add a new Tab or Tag',
+                    l10n.tapToAdd, // TRADUCIDO
                     style: TextStyle(
                       fontSize: 18, 
                       fontWeight: FontWeight.bold, 
