@@ -1,3 +1,6 @@
+import java.util.Properties       
+import java.io.FileInputStream     
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,10 +8,11 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-val keystoreProperties = java.util.Properties()
+// 3. USAMOS LAS CLASES DIRECTAMENTE (Sin escribir "java.")
+val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -32,7 +36,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        multiDexEnabled = true // Asegúrate de tener esto si usas Firebase
+        multiDexEnabled = true 
     }
 
     signingConfigs {
@@ -46,9 +50,7 @@ android {
 
     buildTypes {
         getByName("release") {
-            // Aquí asignamos la configuración que creamos arriba ("release")
             signingConfig = signingConfigs.getByName("release")
-            
             isMinifyEnabled = false 
             isShrinkResources = false
         }

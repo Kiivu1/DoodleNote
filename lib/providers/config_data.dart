@@ -14,7 +14,7 @@ class ConfigurationData extends ChangeNotifier {
   bool _showImage = true;
   bool _showDate = true;
   bool _autoSync = false; 
-  Locale? _appLocale; // Variable para el idioma (null = automático)
+  Locale? _appLocale; 
 
   // --- Getters ---
   bool get darkMode => _darkMode;
@@ -25,18 +25,51 @@ class ConfigurationData extends ChangeNotifier {
   bool get showImage => _showImage;
   bool get showDate => _showDate;
   bool get autoSync => _autoSync;
-  Locale? get appLocale => _appLocale; // Getter del idioma
+  Locale? get appLocale => _appLocale;
 
-  // --- Setters ---
+  // --- Setters (AHORA CON PERSISTENCIA) ---
   
-  // Nota: Recuerda agregar _sharedPrefs.save... a estos setters si quieres persistencia en todo.
-  void setFontSize(int sizeFont){ this._sizeFont = sizeFont; notifyListeners(); }
-  void setFontType(int typeFont){ this._typeFont = typeFont; notifyListeners(); }
-  void setFontTitleSize(int sizeFontTitle){ this._sizeFontTitle = sizeFontTitle; notifyListeners(); }
-  void setMenuLayout(int menuLayout){ this._menuLayout = menuLayout; notifyListeners(); }
-  void setDarkMode(bool darkMode){ this._darkMode = darkMode; notifyListeners(); }
-  void setShowImage(bool showImage){ this._showImage = showImage; notifyListeners(); }
-  void setShowDate(bool showDate){ this._showDate = showDate; notifyListeners(); }
+  void setFontSize(int sizeFont) { 
+    this._sizeFont = sizeFont; 
+    _sharedPrefs.saveFontsSize(sizeFont); // <--- GUARDAR
+    notifyListeners(); 
+  }
+
+  void setFontType(int typeFont) { 
+    this._typeFont = typeFont; 
+    _sharedPrefs.saveFontType(typeFont); // <--- GUARDAR
+    notifyListeners(); 
+  }
+
+  void setFontTitleSize(int sizeFontTitle) { 
+    this._sizeFontTitle = sizeFontTitle; 
+    _sharedPrefs.saveFontTitleSize(sizeFontTitle); // <--- GUARDAR
+    notifyListeners(); 
+  }
+
+  void setMenuLayout(int menuLayout) { 
+    this._menuLayout = menuLayout; 
+    _sharedPrefs.saveMenuLayout(menuLayout); // <--- GUARDAR
+    notifyListeners(); 
+  }
+
+  void setDarkMode(bool darkMode) { 
+    this._darkMode = darkMode; 
+    _sharedPrefs.saveDarkMode(darkMode); // <--- GUARDAR
+    notifyListeners(); 
+  }
+
+  void setShowImage(bool showImage) { 
+    this._showImage = showImage; 
+    _sharedPrefs.saveShowIcon(showImage); // <--- GUARDAR (Asegúrate que se llame así en preferences.dart)
+    notifyListeners(); 
+  }
+
+  void setShowDate(bool showDate) { 
+    this._showDate = showDate; 
+    _sharedPrefs.saveShowDate(showDate); // <--- GUARDAR
+    notifyListeners(); 
+  }
 
   // Setter para AutoSync
   void setAutoSync(bool value) { 
@@ -45,10 +78,9 @@ class ConfigurationData extends ChangeNotifier {
     notifyListeners(); 
   }
 
-  // Setter para Idioma (Nuevo)
+  // Setter para Idioma
   void setAppLocale(Locale? locale){
     _appLocale = locale;
-    // Guardamos el código ('es', 'en') o 'auto' si es null
     String code = locale?.languageCode ?? 'auto';
     _sharedPrefs.saveLanguage(code);
     notifyListeners();
@@ -76,10 +108,8 @@ class ConfigurationData extends ChangeNotifier {
     _showImage = await _sharedPrefs.loadShowIcon();
     _showDate = await _sharedPrefs.loadShowDate();
     
-  
     _autoSync = await _sharedPrefs.loadAutoSync();
 
-    
     String langCode = await _sharedPrefs.loadLanguage();
     if (langCode == 'auto') {
       _appLocale = null; 

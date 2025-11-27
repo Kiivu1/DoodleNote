@@ -268,4 +268,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String errorEmailOpen(Object email) {
     return 'No se pudo abrir la app de correo. Copia: $email';
   }
+
+  @override
+  String get dictate => 'Dictar';
+
+  @override
+  String get listening => 'Escuchando...';
+
+  @override
+  String get readAloud => 'Leer en voz alta';
+
+  @override
+  String get stopReading => 'Detener lectura';
 }

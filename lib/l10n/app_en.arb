@@ -83,5 +83,9 @@
     "rateLabel": "Rating:",
     "errorLoading": "Error loading feedback form.",
     "errorUnknown": "Unknown error.",
-    "errorEmailOpen": "Could not open email app. Copy: {email}"
+    "errorEmailOpen": "Could not open email app. Copy: {email}",
+    "dictate": "Dictate",
+    "listening": "Listening...",
+    "readAloud": "Read Aloud",
+    "stopReading": "Stop Reading"
 }

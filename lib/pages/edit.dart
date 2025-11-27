@@ -7,7 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/services/cloud_service.dart';
-import 'package:doodle_note/l10n/app_localizations.dart'; // IMPORT VITAL
+import 'package:doodle_note/l10n/app_localizations.dart';
+// NUEVO IMPORT
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class EditPage extends StatefulWidget{
   const EditPage({super.key, required this.notaEdited});
@@ -19,13 +21,11 @@ class EditPage extends StatefulWidget{
 }
 
 class _EditPage extends State<EditPage>{  
-  //CONFIGURATION DATA VAR
   double get fontTitleSize => context.watch<ConfigurationData>().sizeFontTitle.toDouble();
   double get fontTextSize => context.watch<ConfigurationData>().sizeFont.toDouble();
   bool get imageVisible => context.watch<ConfigurationData>().showImage;
   bool get dateVisible => context.watch<ConfigurationData>().showDate;
   String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
-
 
   late String _noteTitle;
   late List<String> _tags;
@@ -35,7 +35,10 @@ class _EditPage extends State<EditPage>{
   late TextEditingController _titleController;
 
   final NoteStorage _storage = NoteStorage();
-  final CloudService _cloudService = CloudService(); // Instancia servicio nube
+  final CloudService _cloudService = CloudService();
+  
+  // Variable para el dictado
+  final stt.SpeechToText _speech = stt.SpeechToText();
 
   @override
   void initState(){
@@ -54,7 +57,6 @@ class _EditPage extends State<EditPage>{
     _titleController.dispose();
     super.dispose();
   }
-
 
   //FUNCIONES-----------------------------------------------------
 
@@ -83,7 +85,6 @@ class _EditPage extends State<EditPage>{
   }
 
   void _saveAndGoBack() async {
-
     final int noteId = widget.notaEdited.id == 0 ? _getNewId() : widget.notaEdited.id;
 
     final Note updatedNote = Note(
@@ -96,14 +97,12 @@ class _EditPage extends State<EditPage>{
       tabs: _tabs.isEmpty ? null : _tabs,
     );
 
-    // 1. Guardar Local
     await _storage.saveNote(updatedNote);
 
-    // 2. Sincronización Automática
     if (mounted) {
       bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
       if (isAutoSyncOn) {
-        _cloudService.uploadNotes(); // Sin await para no bloquear UI
+        _cloudService.uploadNotes();
       }
     }
 
@@ -166,11 +165,10 @@ class _EditPage extends State<EditPage>{
     });
   }
 
-  //REFACTORS ------------------------------------------------
+  // REFACTORS UI ------------------------------------------------
   SliverToBoxAdapter _imageSelection(){
-    final l10n = AppLocalizations.of(context)!; // Variable para idiomas
+    final l10n = AppLocalizations.of(context)!;
     final String? imagePath = _currentImagePath;
-
     ImageProvider? imageProvider;
 
     if (imagePath != null) {
@@ -345,7 +343,7 @@ class _EditPage extends State<EditPage>{
 
   //DIALOGS------------------------------------
   void _showAddTagDialog() {
-    final l10n = AppLocalizations.of(context)!; // Idiomas
+    final l10n = AppLocalizations.of(context)!;
     final TextEditingController tagController = TextEditingController();
     showDialog(
       context: context,
@@ -372,49 +370,97 @@ class _EditPage extends State<EditPage>{
     );
   }
 
+  // --- DIÁLOGO CON DICTADO POR VOZ ---
   void _showAddTabDialog() {
-    final l10n = AppLocalizations.of(context)!; // Idiomas
+    final l10n = AppLocalizations.of(context)!;
     final TextEditingController titleController = TextEditingController();
     final TextEditingController bodyController = TextEditingController();
+    
+    // StatefulBuilder nos permite actualizar el icono del micrófono dentro del diálogo
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(l10n.addTabTitle),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  autofocus: true,
-                  decoration: InputDecoration(hintText: l10n.enterTabTitle),
+        bool isListening = false; // Estado local del diálogo
+
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            
+            // Función para escuchar
+            void toggleDictation() async {
+              if (!isListening) {
+                bool available = await _speech.initialize();
+                if (available) {
+                  setStateDialog(() => isListening = true);
+                  _speech.listen(onResult: (result) {
+                    // Actualizamos el texto en tiempo real
+                    bodyController.text = result.recognizedWords;
+                    // Movemos el cursor al final
+                    bodyController.selection = TextSelection.fromPosition(TextPosition(offset: bodyController.text.length));
+                  });
+                }
+              } else {
+                setStateDialog(() => isListening = false);
+                _speech.stop();
+              }
+            }
+
+            return AlertDialog(
+              title: Text(l10n.addTabTitle),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      autofocus: true,
+                      decoration: InputDecoration(hintText: l10n.enterTabTitle),
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Fila con campo de texto y botón de micrófono
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: bodyController,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              hintText: isListening ? l10n.listening : l10n.enterTabContent,
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(isListening ? Icons.mic : Icons.mic_none),
+                          color: isListening ? Colors.red : Colors.blue,
+                          onPressed: toggleDictation,
+                          tooltip: l10n.dictate, 
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: bodyController,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    hintText: l10n.enterTabContent,
-                    border: OutlineInputBorder(),
-                  ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    _speech.stop(); // Asegurarse de parar al guardar
+                    _addTab(titleController.text, bodyController.text);
+                    Navigator.pop(context);
+                  },
+                  child: Text(l10n.add),
+                ),
+                TextButton(
+                  onPressed: () {
+                    _speech.stop();
+                    Navigator.pop(context);
+                  },
+                  child: Text(l10n.cancel),
                 ),
               ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                _addTab(titleController.text, bodyController.text);
-                Navigator.pop(context);
-              },
-              child: Text(l10n.add),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l10n.cancel),
-            ),
-          ],
+            );
+          }
         );
       },
     );
@@ -480,7 +526,6 @@ class _EditPage extends State<EditPage>{
     );
   }
 
-  //Add Tabs or Tags, to make sure SpeedDial doesnt make  ----------------------------------
   SliverToBoxAdapter _addTabSliver() {
     final l10n = AppLocalizations.of(context)!; 
     return SliverToBoxAdapter(
@@ -501,7 +546,7 @@ class _EditPage extends State<EditPage>{
                   Icon(Icons.add_circle_outline, size: 28, color: Colors.white),
                   SizedBox(width: 12),
                   Text(
-                    l10n.tapToAdd, // TRADUCIDO
+                    l10n.tapToAdd,
                     style: TextStyle(
                       fontSize: 18, 
                       fontWeight: FontWeight.bold, 
@@ -516,7 +561,6 @@ class _EditPage extends State<EditPage>{
       )
     );
   }
-  //BUILD--------------------------------
 
   @override
   Widget build(BuildContext context){

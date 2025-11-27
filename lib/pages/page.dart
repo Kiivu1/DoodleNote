@@ -5,11 +5,11 @@ import 'package:doodle_note/providers/config_data.dart';
 import 'package:doodle_note/models/notes.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
-// Servicios
 import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/services/cloud_service.dart';
-// Idiomas
 import 'package:doodle_note/l10n/app_localizations.dart';
+// NUEVO IMPORT
+import 'package:flutter_tts/flutter_tts.dart';
 
 class NotePageScreen extends StatefulWidget {
   const NotePageScreen({super.key, required this.notaPage});
@@ -22,7 +22,11 @@ class NotePageScreen extends StatefulWidget {
 
 class _NotePageScreen extends State<NotePageScreen> {
   final NoteStorage _storage = NoteStorage();
-  final CloudService _cloudService = CloudService(); // Instancia Nube
+  final CloudService _cloudService = CloudService();
+  
+  // Instancia de Text-to-Speech
+  final FlutterTts _flutterTts = FlutterTts();
+  bool _isSpeaking = false;
 
   late Note _currentNote;
 
@@ -30,6 +34,45 @@ class _NotePageScreen extends State<NotePageScreen> {
   void initState(){
     super.initState();
     _currentNote = widget.notaPage;
+    _initTts();
+  }
+
+  @override
+  void dispose() {
+    _flutterTts.stop();
+    super.dispose();
+  }
+
+  void _initTts() async {
+    await _flutterTts.setLanguage("es-ES"); // Por defecto, luego podemos cambiarlo según el idioma de la app si quieres
+    await _flutterTts.setPitch(1.0);
+    
+    _flutterTts.setStartHandler(() {
+      setState(() => _isSpeaking = true);
+    });
+
+    _flutterTts.setCompletionHandler(() {
+      setState(() => _isSpeaking = false);
+    });
+
+    _flutterTts.setErrorHandler((msg) {
+      setState(() => _isSpeaking = false);
+    });
+  }
+
+  Future<void> _speak(String text) async {
+    if (_isSpeaking) {
+      await _flutterTts.stop();
+      setState(() => _isSpeaking = false);
+    } else {
+      if (text.isNotEmpty) {
+        // Detectar idioma actual para leer correctamente
+        final langCode = Localizations.localeOf(context).languageCode;
+        await _flutterTts.setLanguage(langCode == 'en' ? 'en-US' : 'es-ES');
+        
+        await _flutterTts.speak(text);
+      }
+    }
   }
 
   double get fontTitleSize => context.watch<ConfigurationData>().sizeFontTitle.toDouble();
@@ -39,6 +82,9 @@ class _NotePageScreen extends State<NotePageScreen> {
   String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
 
   void _goToEdit() async { 
+    // Detener audio si se va a editar
+    await _flutterTts.stop();
+    
     final result = await Navigator.push(
       context, 
       MaterialPageRoute(builder: (context) => EditPage(notaEdited: _currentNote)),
@@ -47,7 +93,7 @@ class _NotePageScreen extends State<NotePageScreen> {
     if (result != null && result is Note) {
       if (context.mounted) {
         setState(() {
-          _currentNote = result; // Actualizamos la vista con los cambios
+          _currentNote = result;
         });
       }
     }
@@ -55,23 +101,15 @@ class _NotePageScreen extends State<NotePageScreen> {
 
   void _deleteNote() async {
     try {
-      // 1. Borrar Local
       await _storage.deleteNote(_currentNote);
-
-      // 2. Auto-Sync (Si está activo)
       if (mounted) {
         bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
-
         if (isAutoSyncOn) {
           _cloudService.uploadNotes();
-          print("☁️ Nota eliminada y sincronización iniciada...");
         }
-        
         Navigator.pop(context, true); 
       }
-
     } catch (e) {
-      print('Error deleting note: $e');
       if (mounted) {
         Navigator.pop(context, false);
       }
@@ -79,62 +117,47 @@ class _NotePageScreen extends State<NotePageScreen> {
   }
 
   void _shareNote() async {
-    final l10n = AppLocalizations.of(context)!; // Para traducir "Creada" y "Editada"
+    final l10n = AppLocalizations.of(context)!;
     final note = _currentNote;
 
-    //Formatear mensaje
     StringBuffer shareText = StringBuffer();
     shareText.writeln('${note.noteTitle}');
     shareText.writeln('');
-    shareText.writeln('--------------------------------');
     shareText.writeln('${l10n.createdDate}: ${note.creationDate}');
-    shareText.writeln('${l10n.editedDate}: ${note.editCreationDate}');
-    shareText.writeln('');
-    
     if (note.tags != null && note.tags!.isNotEmpty) {
       shareText.writeln('${l10n.tag}s: ${note.tags!.join(', ')}');
-      shareText.writeln('-----------------------------------');
     }
     shareText.writeln('');
-    
     if (note.tabs != null) {
       for (var tab in note.tabs!) {
-        shareText.writeln('\n-- ${tab.title.toUpperCase()} --');
+        shareText.writeln('\n-- ${tab.title} --');
         shareText.writeln(tab.body);
       }
     }
 
     List<XFile> filesToShare = [];
-    String textContent = shareText.toString();
-    String subject = 'Doodle Note: ${note.noteTitle}';
-    
     if (note.imagePath != null && !note.imagePath!.startsWith('assets/')) {
       final imageFile = File(note.imagePath!);
       if (await imageFile.exists()) {
         filesToShare.add(XFile(note.imagePath!));
-        subject = 'Doodle Note: ${note.noteTitle} (+ Image)';
       }
     }
 
-    //Compartir
     try {
       if (filesToShare.isNotEmpty) {
-        await Share.shareXFiles( filesToShare, text: textContent, subject: subject, );
-      }
-      else {
-        await Share.share( textContent, subject: subject, );
+        await Share.shareXFiles(filesToShare, text: shareText.toString(), subject: note.noteTitle);
+      } else {
+        await Share.share(shareText.toString(), subject: note.noteTitle);
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error sharing: $e')),
-        );
-      }
+      // Error handling
     }
   }
   
-  SliverToBoxAdapter _tabContentExpandable(title, body){
+  SliverToBoxAdapter _tabContentExpandable(String title, String body){
     final double space = 2;
+    final l10n = AppLocalizations.of(context)!;
+
     return SliverToBoxAdapter(
       child: Padding(
         padding: EdgeInsets.all(6),
@@ -144,9 +167,22 @@ class _NotePageScreen extends State<NotePageScreen> {
           child: ExpansionTile(
             initiallyExpanded: false,
             tilePadding: EdgeInsets.all(8.0),
-            title: Text(
-              title,
-              style: TextStyle(fontFamily: fontFamilyText,fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
+            // TÍTULO CON BOTÓN DE AUDIO
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(fontFamily: fontFamilyText,fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.volume_up),
+                  tooltip: l10n.readAloud, // "Leer en voz alta"
+                  onPressed: () => _speak(body), // Lee el cuerpo del tab
+                ),
+              ],
             ),
             children: <Widget>[
               Padding(
@@ -186,7 +222,6 @@ class _NotePageScreen extends State<NotePageScreen> {
 
   void _showDialog() {
     final l10n = AppLocalizations.of(context)!;
-    
     showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -200,13 +235,11 @@ class _NotePageScreen extends State<NotePageScreen> {
                   Navigator.of(context).pop();
                   _deleteNote();
                 } ,
-                child: Text(l10n.delete) // "Eliminar"
+                child: Text(l10n.delete)
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text(l10n.cancel) // "Cancelar"
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.cancel)
               )
             ],
           );
@@ -215,11 +248,7 @@ class _NotePageScreen extends State<NotePageScreen> {
 
   Widget _footerButtons() {
     final l10n = AppLocalizations.of(context)!;
-    
-    TextStyle buttonTextStyle = TextStyle(
-      fontSize: fontTextSize,
-      fontWeight: FontWeight.bold,
-    );
+    TextStyle buttonTextStyle = TextStyle(fontSize: fontTextSize, fontWeight: FontWeight.bold);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -230,12 +259,7 @@ class _NotePageScreen extends State<NotePageScreen> {
             onPressed: _showDialog,
             icon: const Icon(Icons.delete_outline, color: Colors.white),
             label: Text(l10n.delete, style: TextStyle(color: Colors.white)),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              textStyle: buttonTextStyle,
-            ),
+            style: TextButton.styleFrom(textStyle: buttonTextStyle),
           ),
         ),
         VerticalDivider(),
@@ -245,12 +269,7 @@ class _NotePageScreen extends State<NotePageScreen> {
             onPressed: _goToEdit,
             icon: const Icon(Icons.edit, color: Colors.white),
             label: Text(l10n.edit, style: TextStyle(color: Colors.white)),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              textStyle: buttonTextStyle,
-            ),
+            style: TextButton.styleFrom(textStyle: buttonTextStyle),
           ),
         ),
         VerticalDivider(),
@@ -259,12 +278,7 @@ class _NotePageScreen extends State<NotePageScreen> {
             onPressed: _shareNote,
             icon: const Icon(Icons.share, color: Colors.white),
             label: Text(l10n.share, style: TextStyle(color: Colors.white)),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              textStyle: buttonTextStyle,
-            ),
+            style: TextButton.styleFrom(textStyle: buttonTextStyle),
           ),
         ),
       ],
@@ -273,7 +287,6 @@ class _NotePageScreen extends State<NotePageScreen> {
 
   SliverToBoxAdapter _titleNote(String? imagePath, String title){
     ImageProvider? imageProvider;
-
     if (imagePath != null) {
       if (imagePath.startsWith('assets/')) {
         imageProvider = AssetImage(imagePath);
@@ -281,10 +294,7 @@ class _NotePageScreen extends State<NotePageScreen> {
         imageProvider = FileImage(File(imagePath));
       }
     }
-
-    if (imageProvider == null) {
-      imageProvider = const AssetImage('assets/images/DNImage1.png');
-    }
+    if (imageProvider == null) imageProvider = const AssetImage('assets/images/DNImage1.png');
 
     return SliverToBoxAdapter(
       child: Padding(padding: const EdgeInsets.all(3),
@@ -299,10 +309,7 @@ class _NotePageScreen extends State<NotePageScreen> {
                 child: Container(
                   width: double.infinity,
                   height: 250, 
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 3),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
+                  decoration: BoxDecoration(border: Border.all(color: Colors.white, width: 3), borderRadius: BorderRadius.circular(15)),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image(image: imageProvider, fit: BoxFit.cover),
@@ -311,9 +318,7 @@ class _NotePageScreen extends State<NotePageScreen> {
               ),
               Padding(
                 padding: EdgeInsets.all(12),
-                child: Text( title, style: TextStyle(fontFamily: fontFamilyText , fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
-                  textAlign: TextAlign.center,
-                ),
+                child: Text( title, style: TextStyle(fontFamily: fontFamilyText , fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black), textAlign: TextAlign.center),
               ),
             ],
           ),

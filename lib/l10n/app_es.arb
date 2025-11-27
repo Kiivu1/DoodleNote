@@ -83,5 +83,9 @@
     "rateLabel": "Calificación:",
     "errorLoading": "Error al cargar el formulario.",
     "errorUnknown": "Error desconocido.",
-    "errorEmailOpen": "No se pudo abrir la app de correo. Copia: {email}"
+    "errorEmailOpen": "No se pudo abrir la app de correo. Copia: {email}",
+    "dictate": "Dictar",
+    "listening": "Escuchando...",
+    "readAloud": "Leer en voz alta",
+    "stopReading": "Detener lectura"
 }
