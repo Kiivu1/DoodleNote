@@ -17,7 +17,6 @@ class NoteStorage {
     return directory.path;
   }
 
-  // Obtener directorio para las notas (JSON)
   Future<Directory> get _localNotesDirectory async {
     final path = await _localPath();
     final directory = Directory(p.join(path, _folderName, _notesSubFolder));
@@ -27,7 +26,6 @@ class NoteStorage {
     return directory;
   }
 
-  // Obtener directorio de imágenes
   Future<Directory> get _localImagesDirectory async {
     final path = await _localPath();
     final directory = Directory(p.join(path, _folderName, _imageSubFolder));
@@ -37,7 +35,6 @@ class NoteStorage {
     return directory;
   }
 
-  // --- 1. GUARDAR NOTA INDIVIDUAL (Uso normal de la App) ---
   Future<void> saveNote(Note note) async {
     final notesDirectory = await _localNotesDirectory;
     final String fileName = '${note.id}.json'; 
@@ -45,26 +42,20 @@ class NoteStorage {
 
     String? newImagePath = note.imagePath;
 
-    // Lógica de Imágenes: Copiar a carpeta persistente y guardar en Galería
     if (newImagePath != null && !newImagePath.startsWith('assets/')) {
       final File originalFile = File(newImagePath);
       
-      // Verificamos que el archivo original exista antes de copiar
       if (await originalFile.exists()) {
         final imageDir = await _localImagesDirectory;
         final String imageExtension = p.extension(newImagePath);
         
-        // Si la imagen ya está en nuestra carpeta, no la duplicamos innecesariamente
-        // (A menos que quieras guardar copias nuevas al editar)
         if (!p.isWithin(imageDir.path, newImagePath)) {
             final String newImageFileName = '${note.id}_${DateTime.now().microsecondsSinceEpoch}$imageExtension';
             final String persistentFilePath = p.join(imageDir.path, newImageFileName);
 
-            // A. Copiar imagen a almacenamiento de la app
             await originalFile.copy(persistentFilePath);
             newImagePath = persistentFilePath; 
 
-            // B. Guardar copia en la galería pública
             try {
               final File fileToSave = File(persistentFilePath);
               final Uint8List bytes = await fileToSave.readAsBytes();
@@ -80,13 +71,15 @@ class NoteStorage {
       }
     }
 
-    // Guardar JSON
     final Note noteToSave = Note(
       id: note.id,
       noteTitle: note.noteTitle,
       imagePath: newImagePath, 
       creationDate: note.creationDate,
       editCreationDate: note.editCreationDate,
+      
+      isStarred: note.isStarred, 
+      
       tags: note.tags,
       tabs: note.tabs,
     );
@@ -95,10 +88,8 @@ class NoteStorage {
     await file.writeAsString(jsonString);
   }
 
-  // --- 2. ELIMINAR NOTA ---
   Future<void> deleteNote(Note note) async {
     try {
-      // Borrar JSON
       final notesDirectory = await _localNotesDirectory;
       final String fileName = '${note.id}.json';
       final File noteFile = File(p.join(notesDirectory.path, fileName));
@@ -108,7 +99,6 @@ class NoteStorage {
         print('Note JSON deleted: ${noteFile.path}');
       }
 
-      // Borrar imagen asociada (si es local)
       if (note.imagePath != null && !note.imagePath!.startsWith('assets/')) {
         final File imageFile = File(note.imagePath!);
         if (await imageFile.exists()) {
@@ -122,7 +112,6 @@ class NoteStorage {
     }
   }
 
-  // --- 3. LEER TODAS LAS NOTAS ---
   Future<List<Note>> readAllNotes() async {
     final directory = await _localNotesDirectory; 
     final List<Note> notes = [];
@@ -148,11 +137,6 @@ class NoteStorage {
     return notes;
   }
 
-  // ---------------------------------------------------------
-  // MÉTODOS NUEVOS PARA CLOUD SYNC (Necesarios para ConfigurationPage)
-  // ---------------------------------------------------------
-
-  // 4. Borrar todas las notas locales (Limpieza antes de restaurar)
   Future<void> deleteAllNotes() async {
     final directory = await _localNotesDirectory;
     if (await directory.exists()) {
@@ -165,10 +149,8 @@ class NoteStorage {
     }
   }
 
-  // 5. Guardar la lista completa que viene de Firebase
   Future<void> saveAllNotes(List<Note> notes) async {
-    // Limpiamos primero para evitar duplicados o notas viejas
-    await deleteAllNotes();
+    await deleteAllNotes(); 
 
     final directory = await _localNotesDirectory;
 
@@ -176,7 +158,6 @@ class NoteStorage {
       final String fileName = '${note.id}.json';
       final File file = File(p.join(directory.path, fileName));
       
-      // Escribimos el archivo individualmente tal cual viene de la nube
       await file.writeAsString(jsonEncode(note.toJson()));
     }
   }

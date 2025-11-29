@@ -8,7 +8,6 @@ import 'dart:io';
 import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/services/cloud_service.dart';
 import 'package:doodle_note/l10n/app_localizations.dart';
-// NUEVO IMPORT
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class EditPage extends StatefulWidget{
@@ -31,13 +30,15 @@ class _EditPage extends State<EditPage>{
   late List<String> _tags;
   late List<TabItem> _tabs;
   String? _currentImagePath;
+  
+  // Variable para la estrella
+  bool _isStarred = false; 
 
   late TextEditingController _titleController;
 
   final NoteStorage _storage = NoteStorage();
   final CloudService _cloudService = CloudService();
   
-  // Variable para el dictado
   final stt.SpeechToText _speech = stt.SpeechToText();
 
   @override
@@ -47,6 +48,10 @@ class _EditPage extends State<EditPage>{
     _tags = widget.notaEdited.tags ?? [];
     _tabs = widget.notaEdited.tabs ?? [];
     _currentImagePath = widget.notaEdited.imagePath;
+    
+    // Cargar el estado de la estrella
+    _isStarred = widget.notaEdited.isStarred; 
+
     _titleController = TextEditingController(text: _noteTitle);
     _titleController.addListener(_updateNoteTitle);
   }
@@ -57,8 +62,6 @@ class _EditPage extends State<EditPage>{
     _titleController.dispose();
     super.dispose();
   }
-
-  //FUNCIONES-----------------------------------------------------
 
   int _getNewId(){
     return DateTime.now().millisecondsSinceEpoch;
@@ -93,6 +96,10 @@ class _EditPage extends State<EditPage>{
       imagePath: _currentImagePath,
       creationDate: widget.notaEdited.creationDate,
       editCreationDate: DateTime.now().toString(),
+      
+      // Guardar el estado de la estrella
+      isStarred: _isStarred, 
+      
       tags: _tags.isEmpty ? null : _tags,
       tabs: _tabs.isEmpty ? null : _tabs,
     );
@@ -165,7 +172,6 @@ class _EditPage extends State<EditPage>{
     });
   }
 
-  // REFACTORS UI ------------------------------------------------
   SliverToBoxAdapter _imageSelection(){
     final l10n = AppLocalizations.of(context)!;
     final String? imagePath = _currentImagePath;
@@ -341,7 +347,6 @@ class _EditPage extends State<EditPage>{
     );
   }
 
-  //DIALOGS------------------------------------
   void _showAddTagDialog() {
     final l10n = AppLocalizations.of(context)!;
     final TextEditingController tagController = TextEditingController();
@@ -376,25 +381,20 @@ class _EditPage extends State<EditPage>{
     final TextEditingController titleController = TextEditingController();
     final TextEditingController bodyController = TextEditingController();
     
-    // StatefulBuilder nos permite actualizar el icono del micrófono dentro del diálogo
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        bool isListening = false; // Estado local del diálogo
+        bool isListening = false;
 
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            
-            // Función para escuchar
             void toggleDictation() async {
               if (!isListening) {
                 bool available = await _speech.initialize();
                 if (available) {
                   setStateDialog(() => isListening = true);
                   _speech.listen(onResult: (result) {
-                    // Actualizamos el texto en tiempo real
                     bodyController.text = result.recognizedWords;
-                    // Movemos el cursor al final
                     bodyController.selection = TextSelection.fromPosition(TextPosition(offset: bodyController.text.length));
                   });
                 }
@@ -416,8 +416,6 @@ class _EditPage extends State<EditPage>{
                       decoration: InputDecoration(hintText: l10n.enterTabTitle),
                     ),
                     const SizedBox(height: 10),
-                    
-                    // Fila con campo de texto y botón de micrófono
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -445,7 +443,7 @@ class _EditPage extends State<EditPage>{
               actions: <Widget>[
                 TextButton(
                   onPressed: () {
-                    _speech.stop(); // Asegurarse de parar al guardar
+                    _speech.stop();
                     _addTab(titleController.text, bodyController.text);
                     Navigator.pop(context);
                   },
@@ -577,8 +575,34 @@ class _EditPage extends State<EditPage>{
                 icon: const Icon(Icons.arrow_back), 
                 padding: EdgeInsets.zero, 
               ),
-              Image.asset('assets/images/DNLogo_Edit.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
-              const Expanded(child: Text('Page', style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 28, 1, 44)))),
+              
+              // Expanded para centrar el título
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                     Image.asset('assets/images/DNLogo_Edit.png', width: 40, height: 40 ,fit: BoxFit.fitHeight),
+                     const SizedBox(width: 8),
+                     const Text('Page', style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 28, 1, 44))),
+                  ]
+                )
+              ),
+
+              // --- BOTÓN DE ESTRELLA (AGREGADO AQUÍ) ---
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isStarred = !_isStarred;
+                  });
+                },
+                icon: Icon(
+                  _isStarred ? Icons.star : Icons.star_border,
+                  color: _isStarred ? Colors.amber : Colors.white70,
+                  size: 28,
+                ),
+                tooltip: 'Favorito / Respaldo',
+              ),
+              // -----------------------------------------
             ]),
           ),
           if (imageVisible) _imageSelection(),

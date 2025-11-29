@@ -8,7 +8,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/services/cloud_service.dart';
 import 'package:doodle_note/l10n/app_localizations.dart';
-// NUEVO IMPORT
 import 'package:flutter_tts/flutter_tts.dart';
 
 class NotePageScreen extends StatefulWidget {
@@ -24,7 +23,6 @@ class _NotePageScreen extends State<NotePageScreen> {
   final NoteStorage _storage = NoteStorage();
   final CloudService _cloudService = CloudService();
   
-  // Instancia de Text-to-Speech
   final FlutterTts _flutterTts = FlutterTts();
   bool _isSpeaking = false;
 
@@ -44,7 +42,7 @@ class _NotePageScreen extends State<NotePageScreen> {
   }
 
   void _initTts() async {
-    await _flutterTts.setLanguage("es-ES"); // Por defecto, luego podemos cambiarlo según el idioma de la app si quieres
+    await _flutterTts.setLanguage("es-ES");
     await _flutterTts.setPitch(1.0);
     
     _flutterTts.setStartHandler(() {
@@ -66,10 +64,8 @@ class _NotePageScreen extends State<NotePageScreen> {
       setState(() => _isSpeaking = false);
     } else {
       if (text.isNotEmpty) {
-        // Detectar idioma actual para leer correctamente
         final langCode = Localizations.localeOf(context).languageCode;
         await _flutterTts.setLanguage(langCode == 'en' ? 'en-US' : 'es-ES');
-        
         await _flutterTts.speak(text);
       }
     }
@@ -82,7 +78,6 @@ class _NotePageScreen extends State<NotePageScreen> {
   String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
 
   void _goToEdit() async { 
-    // Detener audio si se va a editar
     await _flutterTts.stop();
     
     final result = await Navigator.push(
@@ -167,7 +162,6 @@ class _NotePageScreen extends State<NotePageScreen> {
           child: ExpansionTile(
             initiallyExpanded: false,
             tilePadding: EdgeInsets.all(8.0),
-            // TÍTULO CON BOTÓN DE AUDIO
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -179,8 +173,8 @@ class _NotePageScreen extends State<NotePageScreen> {
                 ),
                 IconButton(
                   icon: Icon(Icons.volume_up),
-                  tooltip: l10n.readAloud, // "Leer en voz alta"
-                  onPressed: () => _speak(body), // Lee el cuerpo del tab
+                  tooltip: l10n.readAloud, 
+                  onPressed: () => _speak(body), 
                 ),
               ],
             ),
@@ -338,6 +332,32 @@ class _NotePageScreen extends State<NotePageScreen> {
             title: Row( children: [
               Image.asset('assets/images/DNLogo_Edit.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
               const Expanded(child: Text('Page', style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 28, 1, 44)))),
+              
+              // --- BOTÓN ESTRELLA (NUEVO) ---
+              IconButton(
+                onPressed: () async {
+                  setState(() {
+                    _currentNote.isStarred = !_currentNote.isStarred;
+                  });
+                  // 1. Guardar Localmente
+                  await _storage.saveNote(_currentNote);
+                  
+                  // 2. Sincronizar si está activo
+                  if (context.mounted) {
+                     bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
+                     if (isAutoSyncOn) {
+                       _cloudService.uploadNotes();
+                     }
+                  }
+                },
+                icon: Icon(
+                  _currentNote.isStarred ? Icons.star : Icons.star_border,
+                  color: _currentNote.isStarred ? Colors.amber : Colors.white70,
+                  size: 28,
+                ),
+                tooltip: 'Marcar para respaldo',
+              ),
+              // ------------------------------
             ]),
           ),
           _titleNote(_currentNote.imagePath, _currentNote.noteTitle),

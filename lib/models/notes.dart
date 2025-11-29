@@ -8,6 +8,8 @@ class Note {
   String creationDate;
   String editCreationDate;
 
+  bool isStarred;
+
   //TAGS
   List<String>? tags;
 
@@ -20,6 +22,7 @@ class Note {
     this.imagePath,
     required this.creationDate,
     required this.editCreationDate,
+    this.isStarred=false,
     this.tags,
     this.tabs
   });
@@ -31,6 +34,7 @@ class Note {
       'imagePath': imagePath,
       'creationDate': creationDate,
       'editCreationDate': editCreationDate,
+      'isStarred': isStarred,
       'tags': tags,
       'tabs': tabs?.map((tab) => tab.toJson() ).toList(),
     };
@@ -45,6 +49,7 @@ class Note {
       imagePath: json['imagePath'] as String?,
       creationDate: json['creationDate'] as String,
       editCreationDate: json['editCreationDate'] as String,
+      isStarred: json['isStarred'] ?? false,
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
       tabs: tabs,
     );

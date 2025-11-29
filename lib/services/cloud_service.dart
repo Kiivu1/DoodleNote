@@ -5,7 +5,6 @@ import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/models/notes.dart';
 
 class CloudService {
-  // Singleton para usar la misma instancia siempre
   static final CloudService _instance = CloudService._internal();
   factory CloudService() => _instance;
   CloudService._internal();
@@ -15,7 +14,6 @@ class CloudService {
 
   User? get currentUser => _auth.currentUser;
 
-  // --- AUTENTICACIÓN ---
   Future<User?> signInWithGoogle() async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
@@ -40,35 +38,31 @@ class CloudService {
     await _auth.signOut();
   }
 
-  // --- MÉTODO DE SUBIDA (Manual o Automático) ---
   Future<bool> uploadNotes() async {
     final user = _auth.currentUser;
-    if (user == null) return false; // Si no hay usuario, no hacemos nada
+    if (user == null) return false; 
 
     try {
-      // 1. Leemos todas las notas locales
-      List<Note> localNotes = await _storage.readAllNotes();
+      List<Note> allLocalNotes = await _storage.readAllNotes();
       
-      // 2. Las convertimos a JSON
-      final notesJson = localNotes.map((n) => n.toJson()).toList();
+      List<Note> starredNotes = allLocalNotes.where((n) => n.isStarred).toList();
 
-      // 3. Subimos a Firestore (Sobrescribe lo anterior para mantener el espejo exacto)
+      final notesJson = starredNotes.map((n) => n.toJson()).toList();
+
       await FirebaseFirestore.instance.collection('user_data').doc(user.uid).set({
         'notes_backup': notesJson,
         'lastBackup': FieldValue.serverTimestamp(),
         'device': 'android',
-        'count': localNotes.length
+        'count': starredNotes.length 
       });
       
-      print("☁️ Nube actualizada correctamente");
+      print("☁️ Nube actualizada: ${starredNotes.length} notas favoritas guardadas.");
       return true;
     } catch (e) {
       print("☁️ Error subiendo a la nube: $e");
       return false;
     }
   }
-
-  // --- MÉTODO DE BAJADA (Restaurar) ---
   Future<int> restoreNotes() async {
     final user = _auth.currentUser;
     if (user == null) return 0;
