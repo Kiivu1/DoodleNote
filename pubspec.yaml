@@ -54,6 +54,7 @@ dependencies:
   flutter_localization: ^0.3.3
   speech_to_text: ^7.3.0
   flutter_tts: ^4.2.3
+  internet_connection_checker_plus: ^2.9.1
  
  
 

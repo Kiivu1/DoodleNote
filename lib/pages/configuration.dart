@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:doodle_note/providers/config_data.dart';
-import 'package:doodle_note/services/cloud_service.dart'; 
+import 'package:doodle_note/services/cloud_service.dart';
 import 'package:doodle_note/l10n/app_localizations.dart';
-
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
 class ConfigurationPage extends StatefulWidget {
   const ConfigurationPage({super.key, required this.title});
@@ -17,9 +17,9 @@ class ConfigurationPage extends StatefulWidget {
 
 class _ConfigurationPage extends State<ConfigurationPage> {
   var log = Logger();
-  
-  final CloudService _cloudService = CloudService(); 
-  
+
+  final CloudService _cloudService = CloudService();
+
   bool _isSyncing = false;
 
   @override
@@ -27,14 +27,25 @@ class _ConfigurationPage extends State<ConfigurationPage> {
     super.initState();
   }
 
-  // --- FUNCIONES WRAPPER PARA LA UI ---
-
   Future<void> _handleSignIn() async {
+    bool hasNet = await InternetConnection().hasInternetAccess;
+    if (!hasNet) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sin conexión a internet 📶'), backgroundColor: Colors.orange)
+        );
+      }
+      return;
+    }
+
     setState(() => _isSyncing = true);
     final user = await _cloudService.signInWithGoogle();
+
+    if (!mounted) return;
+
     setState(() => _isSyncing = false);
-    
-    if (user != null && mounted) {
+
+    if (user != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Hola ${user.displayName}!'), backgroundColor: Colors.green)
       );
@@ -43,32 +54,50 @@ class _ConfigurationPage extends State<ConfigurationPage> {
 
   Future<void> _handleSignOut() async {
     await _cloudService.signOut();
-    setState((){}); // Actualizamos para que aparezca el botón de login
+    if (mounted) {
+      setState((){});
+    }
   }
 
   Future<void> _handleBackup() async {
     setState(() => _isSyncing = true);
-    // Usamos el servicio centralizado
+
     bool success = await _cloudService.uploadNotes();
+
+    if (!mounted) return;
+
     setState(() => _isSyncing = false);
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(success ? "Backup OK" : "Error"),
-        backgroundColor: success ? Colors.teal : Colors.red,
-      ));
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Backup OK"), backgroundColor: Colors.teal)
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error: Revisa tu conexión"), backgroundColor: Colors.redAccent)
+      );
     }
   }
 
   Future<void> _handleRestore() async {
     setState(() => _isSyncing = true);
     try {
-      // Usamos el servicio centralizado
       int count = await _cloudService.restoreNotes();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("$count notas restauradas"), backgroundColor: Colors.teal)
-        );
+
+      if (!mounted) return;
+
+      if (count == -1) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text("Sin internet. No se puede restaurar."), backgroundColor: Colors.orange)
+         );
+      } else if (count == 0) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text("No se encontraron notas o error."), backgroundColor: Colors.grey)
+         );
+      } else {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text("¡$count notas restauradas!"), backgroundColor: Colors.teal)
+         );
       }
     } catch (e) {
       if (mounted) {
@@ -77,15 +106,15 @@ class _ConfigurationPage extends State<ConfigurationPage> {
         );
       }
     } finally {
-      setState(() => _isSyncing = false);
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
     }
   }
 
-  // --- WIDGET DE LA NUBE ---
-
   Widget _cloudSyncCard(BuildContext context, ConfigurationData config) {
-    final l10n = AppLocalizations.of(context)!; 
-    final user = _cloudService.currentUser; // Obtenemos usuario del servicio
+    final l10n = AppLocalizations.of(context)!;
+    final user = _cloudService.currentUser;
     final String? fontFamily = config.FontFamily;
 
     return Card(
@@ -116,7 +145,6 @@ class _ConfigurationPage extends State<ConfigurationPage> {
                       )
                     : Column(
                         children: [
-                          // Info Usuario
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: CircleAvatar(
@@ -130,8 +158,7 @@ class _ConfigurationPage extends State<ConfigurationPage> {
                               onPressed: _handleSignOut,
                             ),
                           ),
-                          
-                          // Switch AutoSync
+
                           SwitchListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(l10n.autoSync, style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold)),
@@ -142,8 +169,7 @@ class _ConfigurationPage extends State<ConfigurationPage> {
                           ),
 
                           const Divider(),
-                          
-                          // Botones Manuales
+
                           Row(
                             children: [
                               Expanded(
@@ -176,8 +202,7 @@ class _ConfigurationPage extends State<ConfigurationPage> {
   @override
   Widget build(BuildContext context) {
     final config = context.watch<ConfigurationData>();
-    // Variable corta para usar traducciones fácilmente
-    final l10n = AppLocalizations.of(context)!; 
+    final l10n = AppLocalizations.of(context)!;
 
     log.d("Widget did this: build");
     return Scaffold(
@@ -188,8 +213,7 @@ class _ConfigurationPage extends State<ConfigurationPage> {
       body: ListView(
         children: <Widget>[
           const Divider(),
-          
-          // 1. SECCIÓN IDIOMA
+
           ListTile(
             title: Text(l10n.language, style: TextStyle(fontFamily: config.FontFamily, fontWeight: FontWeight.bold)),
             subtitle: DropdownButton<String>(
@@ -212,13 +236,12 @@ class _ConfigurationPage extends State<ConfigurationPage> {
           ),
           const Divider(),
 
-          // 2. FUENTES
           ListTile(
             title: Text(l10n.fontSettings, style: TextStyle(fontFamily: config.FontFamily, fontSize: config.sizeFontTitle.toDouble(), fontWeight: FontWeight.bold)),
             subtitle: Text(l10n.fontSettingsDesc, style: TextStyle(fontFamily: config.FontFamily, fontSize: config.sizeFont.toDouble())),
           ),
           const Divider(),
-          
+
           ListTile(
             title: Text('${l10n.textSize}: ${config.sizeFont}', style: TextStyle(fontFamily: config.FontFamily)),
             subtitle: Slider(
@@ -228,7 +251,7 @@ class _ConfigurationPage extends State<ConfigurationPage> {
               onChanged: (double value) { config.setFontSize(value.toInt()); },
             ),
           ),
-          
+
           ListTile(
             title: Text('${l10n.titleSize}: ${config.sizeFontTitle}', style: TextStyle(fontFamily: config.FontFamily)),
             subtitle: Slider(
@@ -239,8 +262,7 @@ class _ConfigurationPage extends State<ConfigurationPage> {
             ),
           ),
           const Divider(),
-          
-          // 3. TIPO DE FUENTE
+
           ListTile(
             title: Text(l10n.fontType, style: TextStyle(fontFamily: config.FontFamily)),
             subtitle: DropdownButton<int>(
@@ -254,8 +276,7 @@ class _ConfigurationPage extends State<ConfigurationPage> {
               onChanged: (int? value) { if (value != null) config.setFontType(value); },
             ),
           ),
-          
-          // 4. DISEÑO MENÚ
+
           ListTile(
             title: Text(l10n.menuLayout, style: TextStyle(fontFamily: config.FontFamily)),
             subtitle: DropdownButton<int>(
@@ -270,24 +291,22 @@ class _ConfigurationPage extends State<ConfigurationPage> {
             ),
           ),
           const Divider(),
-          
-          // 5. SWITCHES
+
           SwitchListTile(
             title: Text(l10n.showImage, style: TextStyle(fontFamily: config.FontFamily)),
             value: config.showImage,
             onChanged: (bool value) { config.setShowImage(value); },
           ),
-          
+
           SwitchListTile(
             title: Text(l10n.showDate, style: TextStyle(fontFamily: config.FontFamily)),
             value: config.showDate,
             onChanged: (bool value) { config.setShowDate(value); },
           ),
-          
-          // 6. TARJETA DE NUBE
+
           const SizedBox(height: 20),
           _cloudSyncCard(context, config),
-          const SizedBox(height: 50), 
+          const SizedBox(height: 50),
         ],
       ),
     );

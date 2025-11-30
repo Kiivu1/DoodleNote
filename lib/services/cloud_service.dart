@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:doodle_note/services/note_storage.dart';
 import 'package:doodle_note/models/notes.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
 class CloudService {
   static final CloudService _instance = CloudService._internal();
@@ -15,6 +16,9 @@ class CloudService {
   User? get currentUser => _auth.currentUser;
 
   Future<User?> signInWithGoogle() async {
+    bool hasInternet = await InternetConnection().hasInternetAccess;
+    if (!hasInternet) return null;
+
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
@@ -39,8 +43,11 @@ class CloudService {
   }
 
   Future<bool> uploadNotes() async {
+    bool hasInternet = await InternetConnection().hasInternetAccess;
+    if (!hasInternet) return false;
+
     final user = _auth.currentUser;
-    if (user == null) return false; 
+    if (user == null) return false;
 
     try {
       List<Note> allLocalNotes = await _storage.readAllNotes();
@@ -56,14 +63,17 @@ class CloudService {
         'count': starredNotes.length 
       });
       
-      print("☁️ Nube actualizada: ${starredNotes.length} notas favoritas guardadas.");
       return true;
     } catch (e) {
-      print("☁️ Error subiendo a la nube: $e");
+      print("Error cloud: $e");
       return false;
     }
   }
+
   Future<int> restoreNotes() async {
+    bool hasInternet = await InternetConnection().hasInternetAccess;
+    if (!hasInternet) return -1;
+
     final user = _auth.currentUser;
     if (user == null) return 0;
 
@@ -81,8 +91,8 @@ class CloudService {
       
       return cloudNotes.length;
     } catch (e) {
-      print("Error restaurando: $e");
-      rethrow;
+      print("Error restore: $e");
+      return 0;
     }
   }
 }
