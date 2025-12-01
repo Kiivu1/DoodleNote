@@ -11,7 +11,6 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:doodle_note/pages/about.dart';
-// IMPORTAR IDIOMAS
 import 'package:doodle_note/l10n/app_localizations.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -51,7 +50,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _loadNotes();
   }
 
-  //FUNCIONES------------------------------------------------------
   Future<void> _loadNotes() async{
     setState((){ _isLoading = true; });
     final loadedNotes = await _storage.readAllNotes();
@@ -77,7 +75,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _loadNotes();
   }
   
-  // Nota: Usamos Textos traducidos al pasar el titulo, aunque ConfigurationPage ya lo maneja internamente
   void _goToConfig() async {
     await Navigator.push(context, MaterialPageRoute(builder: (context) => ConfigurationPage(title: 'Configuration')), ); 
     _loadNotes(); 
@@ -88,7 +85,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _loadNotes(); 
   }
 
-  //REFACTORS------------------------------------------------------
   Widget _imageContainer(String? imagePath, {double size = 40}){
     ImageProvider? imageProvider;
 
@@ -125,7 +121,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  //Contenedor original
   Widget _ogNoteContent(Note note){
     return Padding(padding: const EdgeInsets.all(1),
         child: Card( margin: EdgeInsets.all(2), color: const Color.fromARGB(255, 144, 119, 244),
@@ -134,23 +129,28 @@ class _MyHomePageState extends State<MyHomePage> {
             leading: imageVisible ? _imageContainer(note.imagePath) : null,
             title: Text(note.noteTitle, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold , color: Colors.black)),
             subtitle: Text(dateVisible ? _formatDate(note.editCreationDate) : '', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontDateSize, fontWeight: FontWeight.bold , color: Colors.black)),
-            trailing: Icon(Icons.arrow_forward, color: const Color.fromARGB(255, 20, 1, 34))
+            trailing: note.isStarred 
+                ? Icon(Icons.star, color: Colors.amber, size: 28) 
+                : Icon(Icons.arrow_forward, color: const Color.fromARGB(255, 20, 1, 34))
           ) 
         )
     );
   }
-  //contenedor pequeño
+
   Widget _compactNote(Note note){
     return Padding(padding: const EdgeInsets.all(1),
       child: Card( margin: EdgeInsets.all(2), color: const Color.fromARGB(255, 144, 119, 244),
         child: ListTile(
           onTap: () => _goToPage(note),
           title: Text(note.noteTitle, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold , color: Colors.black)),
+          trailing: note.isStarred 
+              ? Icon(Icons.star, color: Colors.amber, size: 20)
+              : null,
         )
       )
     );
   }
-  //Contenedor Grande
+
   Widget _gridNote(Note note){
     const double imageSize = 200;
 
@@ -159,35 +159,44 @@ class _MyHomePageState extends State<MyHomePage> {
       color: const Color.fromARGB(255, 144, 119, 244),
       child: InkWell(
         onTap: () => _goToPage(note),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(child: imageVisible ? _imageContainer(note.imagePath, size: imageSize): null),
-              const SizedBox(height: 8),
-              Text(
-                note.noteTitle,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(child: imageVisible ? _imageContainer(note.imagePath, size: imageSize): null),
+                  const SizedBox(height: 8),
+                  Text(
+                    note.noteTitle,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    dateVisible ? _formatDate(note.editCreationDate): '',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: fontFamilyText, fontSize: fontDateSize, fontWeight: FontWeight.bold, color: Colors.black54),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                dateVisible ? _formatDate(note.editCreationDate): '',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: fontFamilyText, fontSize: fontDateSize, fontWeight: FontWeight.bold, color: Colors.black54),
+            ),
+            if (note.isStarred)
+              Positioned(
+                top: 5,
+                right: 5,
+                child: Icon(Icons.star, color: Colors.amber, size: 28),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
   
-  //Refactor: agrega la nota
   Widget _noteContent(Note note){
     int typeNoteLayout = context.watch<ConfigurationData>().menuLayout;
 
@@ -201,7 +210,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // Variable corta para textos
+    final l10n = AppLocalizations.of(context)!; 
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 57, 29, 82),
@@ -218,7 +227,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Image.asset('assets/images/DNLogo_Home.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
-                  // USAMOS l10n PARA EL TÍTULO
                   Expanded(child: Text(l10n.appTitle, style: TextStyle(fontFamily: fontFamilyText, fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 28, 1, 44)))),
                 ]
               )
@@ -228,7 +236,6 @@ class _MyHomePageState extends State<MyHomePage> {
             if (!_isLoading)
               ..._notes.map((note) => _noteContent(note)).toList(),
             if (!_isLoading && _notes.isEmpty)
-              // USAMOS l10n PARA MENSAJE VACÍO
               SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(50), child: Text(l10n.noNotes, style: TextStyle(fontFamily: fontFamilyText,color: Colors.white, fontSize: fontDateSize))))),
           ],
         ),
@@ -245,7 +252,6 @@ class _MyHomePageState extends State<MyHomePage> {
           SpeedDialChild(
             child: const Icon(Icons.add, color: Colors.white),
             backgroundColor: Colors.green,
-            // USAMOS l10n
             label: l10n.createNote,
             labelStyle: const TextStyle(fontWeight: FontWeight.w500),
             onTap: () => _goToEdit(),
@@ -253,7 +259,6 @@ class _MyHomePageState extends State<MyHomePage> {
           SpeedDialChild(
             child: const Icon(Icons.search, color: Colors.white),
             backgroundColor: Colors.blueAccent,
-            // USAMOS l10n
             label: l10n.search,
             labelStyle: const TextStyle(fontWeight: FontWeight.w500),
             onTap: () => _goToSearch(),
@@ -261,7 +266,6 @@ class _MyHomePageState extends State<MyHomePage> {
           SpeedDialChild(
             child: const Icon(Icons.settings, color: Colors.white),
             backgroundColor: Colors.orange,
-            // USAMOS l10n
             label: l10n.settingsTitle,
             labelStyle: const TextStyle(fontWeight: FontWeight.w500),
             onTap: () => _goToConfig(),
@@ -269,7 +273,6 @@ class _MyHomePageState extends State<MyHomePage> {
           SpeedDialChild(
             child: const Icon(Icons.person, color: Colors.white),
             backgroundColor: Colors.purple,
-            // USAMOS l10n
             label: l10n.about,
             labelStyle: const TextStyle(fontWeight: FontWeight.bold),
             onTap: () => _goToAbout(),

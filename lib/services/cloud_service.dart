@@ -52,15 +52,13 @@ class CloudService {
     try {
       List<Note> allLocalNotes = await _storage.readAllNotes();
       
-      List<Note> starredNotes = allLocalNotes.where((n) => n.isStarred).toList();
-
-      final notesJson = starredNotes.map((n) => n.toJson()).toList();
+      final notesJson = allLocalNotes.map((n) => n.toJson()).toList();
 
       await FirebaseFirestore.instance.collection('user_data').doc(user.uid).set({
         'notes_backup': notesJson,
         'lastBackup': FieldValue.serverTimestamp(),
         'device': 'android',
-        'count': starredNotes.length 
+        'count': allLocalNotes.length 
       });
       
       return true;

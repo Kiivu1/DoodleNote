@@ -35,6 +35,7 @@ class NoteStorage {
     return directory;
   }
 
+
   Future<void> saveNote(Note note) async {
     final notesDirectory = await _localNotesDirectory;
     final String fileName = '${note.id}.json'; 
@@ -133,7 +134,12 @@ class NoteStorage {
       }
     }
 
-    notes.sort((a, b) => b.editCreationDate.compareTo(a.editCreationDate));
+    notes.sort((a, b) {
+      if (a.isStarred && !b.isStarred) return -1; 
+      if (!a.isStarred && b.isStarred) return 1;  
+      return b.editCreationDate.compareTo(a.editCreationDate);
+    });
+
     return notes;
   }
 
@@ -150,13 +156,14 @@ class NoteStorage {
   }
 
   Future<void> saveAllNotes(List<Note> notes) async {
-    await deleteAllNotes(); 
+    await deleteAllNotes();
 
     final directory = await _localNotesDirectory;
 
     for (var note in notes) {
       final String fileName = '${note.id}.json';
       final File file = File(p.join(directory.path, fileName));
+      
       
       await file.writeAsString(jsonEncode(note.toJson()));
     }
