@@ -25,10 +25,10 @@ Como mayor atractivo tiene el poder estructurar la nota mediante pestañas, part
 
 ## Capturas de pantalla
 <p align="left">
-    <img src="assets/screenshots/4" alt="DoodleNote, Home screen" width="300"/>
-    <img src="assets/screenshots/2" alt="DoodleNote, Notes page" width= "300"/>
-    <img src="assets/screenshots/3" alt="DoodleNote, Edit screen" width="300"/>
-    <img src="assets/screenshots/1" alt="DoodleNote, Configuration screen" width="300"/>
+    <img src="assets/screenshots/4.jpg" alt="DoodleNote, Home screen" width="300"/>
+    <img src="assets/screenshots/2.jpg" alt="DoodleNote, Notes page" width= "300"/>
+    <img src="assets/screenshots/3.jpg" alt="DoodleNote, Edit screen" width="300"/>
+    <img src="assets/screenshots/1.jpg" alt="DoodleNote, Configuration screen" width="300"/>
 </p>
 
 # Pila de Tecnología
