@@ -87,5 +87,7 @@
     "dictate": "Dictate",
     "listening": "Listening...",
     "readAloud": "Read Aloud",
-    "stopReading": "Stop Reading"
+    "stopReading": "Stop Reading",
+    "noteTitle": "Note Title",
+    "noteTitlePlaceholder" : "Note title placeholder"
 }

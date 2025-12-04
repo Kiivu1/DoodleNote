@@ -73,7 +73,6 @@ class _NotePageScreen extends State<NotePageScreen> {
 
   double get fontTitleSize => context.watch<ConfigurationData>().sizeFontTitle.toDouble();
   double get fontTextSize => context.watch<ConfigurationData>().sizeFont.toDouble();
-  bool get imageVisible => context.watch<ConfigurationData>().showImage;
   bool get dateVisible => context.watch<ConfigurationData>().showDate;
   String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
 
@@ -144,11 +143,9 @@ class _NotePageScreen extends State<NotePageScreen> {
       } else {
         await Share.share(shareText.toString(), subject: note.noteTitle);
       }
-    } catch (e) {
-      // Error handling
-    }
+    } catch (e) {}
   }
-  
+
   SliverToBoxAdapter _tabContentExpandable(String title, String body){
     final double space = 2;
     final l10n = AppLocalizations.of(context)!;
@@ -165,10 +162,11 @@ class _NotePageScreen extends State<NotePageScreen> {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
+                Expanded( // El Expanded asegura que el Text ocupe el espacio restante y se ajuste
                   child: Text(
                     title,
                     style: TextStyle(fontFamily: fontFamilyText,fontSize: fontTitleSize, fontWeight: FontWeight.bold, color: Colors.black),
+                    overflow: TextOverflow.ellipsis, // Esto ayuda al ajuste
                   ),
                 ),
                 IconButton(
@@ -297,7 +295,7 @@ class _NotePageScreen extends State<NotePageScreen> {
           color: const Color.fromARGB(255, 194, 175, 238),
           child: Column(
             children: [
-              if (imageVisible) 
+              if (!_currentNote.hideImage)
               Padding(
                 padding: EdgeInsets.all(6),
                 child: Container(
@@ -333,31 +331,47 @@ class _NotePageScreen extends State<NotePageScreen> {
               Image.asset('assets/images/DNLogo_Edit.png', width: 50, height: 50 ,fit: BoxFit.fitHeight),
               const Expanded(child: Text('Page', style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 28, 1, 44)))),
               
-              // --- BOTÓN ESTRELLA (NUEVO) ---
+              IconButton(
+                onPressed: () async {
+                  setState(() {
+                    _currentNote.hideImage = !_currentNote.hideImage;
+                  });
+                  await _storage.saveNote(_currentNote);
+
+                  bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
+                  if (isAutoSyncOn) {
+                    _cloudService.uploadNotes();
+                  }
+                },
+                icon: Icon(
+                  _currentNote.hideImage ? Icons.visibility_off_outlined : Icons.remove_red_eye_outlined,
+                  color: Colors.white70,
+                  size: 28,
+                ),
+                tooltip: 'Ocultar/Mostrar Imagen',
+              ),
+
               IconButton(
                 onPressed: () async {
                   setState(() {
                     _currentNote.isStarred = !_currentNote.isStarred;
                   });
-                  // 1. Guardar Localmente
                   await _storage.saveNote(_currentNote);
                   
-                  // 2. Sincronizar si está activo
                   if (context.mounted) {
-                     bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
-                     if (isAutoSyncOn) {
-                       _cloudService.uploadNotes();
-                     }
+                      bool isAutoSyncOn = context.read<ConfigurationData>().autoSync;
+                      if (isAutoSyncOn) {
+                        _cloudService.uploadNotes();
+                      }
                   }
                 },
                 icon: Icon(
                   _currentNote.isStarred ? Icons.star : Icons.star_border,
-                  color: _currentNote.isStarred ? Colors.amber : Colors.white70,
+                  color: const Color.fromARGB(255, 255, 214, 0),
                   size: 28,
                 ),
                 tooltip: 'Marcar para respaldo',
               ),
-              // ------------------------------
             ]),
           ),
           _titleNote(_currentNote.imagePath, _currentNote.noteTitle),

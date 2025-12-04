@@ -87,5 +87,7 @@
     "dictate": "Dictar",
     "listening": "Escuchando...",
     "readAloud": "Leer en voz alta",
-    "stopReading": "Detener lectura"
+    "stopReading": "Detener lectura",
+    "Notetitle" : "Titulo de la nota",
+    "noteTitlePlaceholder" : " Ingresa el título de la nota aquí"
 }

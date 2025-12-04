@@ -72,6 +72,7 @@ class NoteStorage {
       }
     }
 
+    // --- CORRECCIÓN: Se agrega hideImage al objeto noteToSave ---
     final Note noteToSave = Note(
       id: note.id,
       noteTitle: note.noteTitle,
@@ -80,10 +81,12 @@ class NoteStorage {
       editCreationDate: note.editCreationDate,
       
       isStarred: note.isStarred, 
+      hideImage: note.hideImage,
       
       tags: note.tags,
       tabs: note.tabs,
     );
+    // -------------------------------------------------------------
 
     final jsonString = jsonEncode(noteToSave.toJson());
     await file.writeAsString(jsonString);

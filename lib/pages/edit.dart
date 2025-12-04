@@ -19,10 +19,9 @@ class EditPage extends StatefulWidget{
   State<EditPage> createState() => _EditPage();
 }
 
-class _EditPage extends State<EditPage>{  
+class _EditPage extends State<EditPage>{ 
   double get fontTitleSize => context.watch<ConfigurationData>().sizeFontTitle.toDouble();
   double get fontTextSize => context.watch<ConfigurationData>().sizeFont.toDouble();
-  bool get imageVisible => context.watch<ConfigurationData>().showImage;
   bool get dateVisible => context.watch<ConfigurationData>().showDate;
   String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
 
@@ -31,10 +30,11 @@ class _EditPage extends State<EditPage>{
   late List<TabItem> _tabs;
   String? _currentImagePath;
   
-  // Variable para la estrella
   bool _isStarred = false; 
+  bool _hideImage = false;
 
   late TextEditingController _titleController;
+  late bool _isNewNote;
 
   final NoteStorage _storage = NoteStorage();
   final CloudService _cloudService = CloudService();
@@ -49,10 +49,18 @@ class _EditPage extends State<EditPage>{
     _tabs = widget.notaEdited.tabs ?? [];
     _currentImagePath = widget.notaEdited.imagePath;
     
-    // Cargar el estado de la estrella
     _isStarred = widget.notaEdited.isStarred; 
+    _hideImage = widget.notaEdited.hideImage;
 
-    _titleController = TextEditingController(text: _noteTitle);
+    if (widget.notaEdited.noteTitle == "Doodle Note: Placeholder") {
+        _isNewNote = true;
+        _titleController = TextEditingController(text: '');
+        _noteTitle = ''; 
+    } else {
+        _isNewNote = false;
+        _titleController = TextEditingController(text: _noteTitle);
+    }
+
     _titleController.addListener(_updateNoteTitle);
   }
 
@@ -90,15 +98,17 @@ class _EditPage extends State<EditPage>{
   void _saveAndGoBack() async {
     final int noteId = widget.notaEdited.id == 0 ? _getNewId() : widget.notaEdited.id;
 
+    String finalNoteTitle = (_noteTitle.trim().isEmpty && _isNewNote) ? "Doodle Note: Placeholder" : _noteTitle;
+
     final Note updatedNote = Note(
       id: noteId,
-      noteTitle: _noteTitle,
+      noteTitle: finalNoteTitle, 
       imagePath: _currentImagePath,
       creationDate: widget.notaEdited.creationDate,
       editCreationDate: DateTime.now().toString(),
       
-      // Guardar el estado de la estrella
       isStarred: _isStarred, 
+      hideImage: _hideImage, 
       
       tags: _tags.isEmpty ? null : _tags,
       tabs: _tabs.isEmpty ? null : _tabs,
@@ -194,7 +204,7 @@ class _EditPage extends State<EditPage>{
             children : [
               Padding(
                 padding: EdgeInsets.only(top: 6, left: 6, right: 6),
-                child: (imageVisible && imageProvider!= null)? Container(
+                child: (!_hideImage && imageProvider!= null)? Container( 
                   width: double.infinity,
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white, width: 3),
@@ -320,6 +330,8 @@ class _EditPage extends State<EditPage>{
   }
   
   SliverToBoxAdapter _noteTitleWidget(){
+    final l10n = AppLocalizations.of(context)!;
+    
     return SliverToBoxAdapter(
       child: Padding(padding: const EdgeInsets.all(1),
         child: Card(
@@ -333,7 +345,17 @@ class _EditPage extends State<EditPage>{
                 Expanded( 
                   child: TextFormField(
                     controller: _titleController,
-                    decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                    decoration: InputDecoration(
+                      border: InputBorder.none, 
+                      isDense: true,
+                      hintText: _isNewNote ? (l10n.noteTitle ?? 'Escribe el título aquí...') : null,
+                      hintStyle: TextStyle(
+                        fontSize: fontTitleSize, 
+                        fontFamily: fontFamilyText, 
+                        fontWeight: FontWeight.bold, 
+                        color: Colors.white70
+                      )
+                    ),
                     style: TextStyle(fontSize: fontTitleSize, fontFamily: fontFamilyText, fontWeight: FontWeight.bold, color: Colors.white), 
                   ), 
                 ),
@@ -375,7 +397,6 @@ class _EditPage extends State<EditPage>{
     );
   }
 
-  // --- DIÁLOGO CON DICTADO POR VOZ ---
   void _showAddTabDialog() {
     final l10n = AppLocalizations.of(context)!;
     final TextEditingController titleController = TextEditingController();
@@ -493,11 +514,11 @@ class _EditPage extends State<EditPage>{
           actions: <Widget>[
             TextButton( onPressed: () => { Navigator.of(context).pop(),_showAddTabDialog(), },
             child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.tab, color: Colors.indigo[200]), SizedBox(width: 8), Text(l10n.tab), ],),
-          ),
-          TextButton(
-            onPressed: () => { Navigator.of(context).pop(), _showAddTagDialog(), },
-            child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.label_outline, color: Colors.blueGrey), SizedBox(width: 8), Text(l10n.tag), ], ),
-          ),
+            ),
+            TextButton(
+              onPressed: () => { Navigator.of(context).pop(), _showAddTagDialog(), },
+              child: Row( mainAxisSize: MainAxisSize.min, children: [ Icon(Icons.label_outline, color: Colors.blueGrey), SizedBox(width: 8), Text(l10n.tag), ], ),
+            ),
             TextButton(onPressed: () => {Navigator.of(context).pop()}, child: Text(l10n.cancel))
           ],
         );
@@ -576,19 +597,31 @@ class _EditPage extends State<EditPage>{
                 padding: EdgeInsets.zero, 
               ),
               
-              // Expanded para centrar el título
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                     Image.asset('assets/images/DNLogo_Edit.png', width: 40, height: 40 ,fit: BoxFit.fitHeight),
-                     const SizedBox(width: 8),
-                     const Text('Page', style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 28, 1, 44))),
+                    Image.asset('assets/images/DNLogo_Edit.png', width: 40, height: 40 ,fit: BoxFit.fitHeight),
+                    const SizedBox(width: 8),
+                    const Text('Page', style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 28, 1, 44))),
                   ]
                 )
               ),
+              
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _hideImage = !_hideImage; 
+                  });
+                },
+                icon: Icon(
+                  _hideImage ? Icons.visibility_off_outlined : Icons.remove_red_eye_outlined,
+                  color: Colors.white70,
+                  size: 28,
+                ),
+                tooltip: 'Ocultar/Mostrar Imagen',
+              ),
 
-              // --- BOTÓN DE ESTRELLA (AGREGADO AQUÍ) ---
               IconButton(
                 onPressed: () {
                   setState(() {
@@ -597,15 +630,14 @@ class _EditPage extends State<EditPage>{
                 },
                 icon: Icon(
                   _isStarred ? Icons.star : Icons.star_border,
-                  color: _isStarred ? Colors.amber : Colors.white70,
+                  color: const Color.fromARGB(255, 255, 214, 0), // Corregido: 'amber' estaba como color: Colors.amber : Colors.white70
                   size: 28,
                 ),
                 tooltip: 'Favorito / Respaldo',
               ),
-              // -----------------------------------------
             ]),
           ),
-          if (imageVisible) _imageSelection(),
+          if (!_hideImage) _imageSelection(),
           _noteTitleWidget(),
           for (int i = 0; i < _tags.length; i++) _noteTagWidget(_tags[i], i),
           for (int i = 0; i < _tabs.length; i++) _noteTabWidget(_tabs[i], i),

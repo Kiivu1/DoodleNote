@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:doodle_note/pages/page.dart';
-import 'package:doodle_note/pages/search.dart';
 import 'package:doodle_note/pages/edit.dart';
 import 'package:doodle_note/pages/configuration.dart';
 import 'package:provider/provider.dart';
@@ -25,15 +24,67 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
 
   final NoteStorage _storage = NoteStorage();
-  List<Note> _notes = [];
+  
+  List<Note> _allNotes = [];
+  List<Note> _filteredNotes = [];
   bool _isLoading = true;
+  
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState(){
+    super.initState();
+    _loadNotes();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadNotes() async{
+    setState((){ _isLoading = true; });
+    final loadedNotes = await _storage.readAllNotes();
+    setState(() {
+      _allNotes = loadedNotes;
+      _runFilter(_searchController.text);
+      _isLoading = false;
+    });
+  }
+
+  void _runFilter(String enteredKeyword) {
+    List<Note> results = [];
+    if (enteredKeyword.isEmpty) {
+      results = _allNotes;
+    } else {
+      results = _allNotes.where((note) {
+        final titleLower = note.noteTitle.toLowerCase();
+        final keywordLower = enteredKeyword.toLowerCase();
+
+        if (titleLower.contains(keywordLower)) return true;
+        
+        if (note.tags?.any((tag) => tag.toLowerCase().contains(keywordLower)) ?? false) return true;
+
+        if (note.tabs?.any((tab) => 
+              tab.body.toLowerCase().contains(keywordLower) || 
+              tab.title.toLowerCase().contains(keywordLower)
+          ) ?? false) return true;
+
+        return false;
+      }).toList();
+    }
+
+    setState(() {
+      _filteredNotes = results;
+    });
+  }
 
   String _formatDate(String dateStrign){
     try{
       final dateTime = DateTime.parse(dateStrign);
       return DateFormat('MMM d, yyyy h:mm a').format(dateTime);
     } catch (e){
-      print('Error parsing date: $e');
       return 'Invalid Date';
     }
   }
@@ -44,28 +95,8 @@ class _MyHomePageState extends State<MyHomePage> {
   bool get dateVisible => context.watch<ConfigurationData>().showDate;
   String get fontFamilyText => context.watch<ConfigurationData>().FontFamily ?? '';
 
-  @override
-  void initState(){
-    super.initState();
-    _loadNotes();
-  }
-
-  Future<void> _loadNotes() async{
-    setState((){ _isLoading = true; });
-    final loadedNotes = await _storage.readAllNotes();
-    setState(() {
-      _notes = loadedNotes;
-      _isLoading = false;
-    });
-  }
-
   void _goToPage(Note note) async {
     await Navigator.push( context, MaterialPageRoute(builder: (context) => NotePageScreen(notaPage: note)), );
-    _loadNotes();
-  }
-
-  void _goToSearch() async {
-    await Navigator.push( context, MaterialPageRoute(builder: (context) => SearchPage()), );
     _loadNotes();
   }
 
@@ -83,6 +114,41 @@ class _MyHomePageState extends State<MyHomePage> {
   void _goToAbout() async {
     await Navigator.push(context, MaterialPageRoute(builder: (context)=> AboutPage()), ); 
     _loadNotes(); 
+  }
+
+  SliverToBoxAdapter _searchBarSliver() {
+    final l10n = AppLocalizations.of(context)!;
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) => _runFilter(value),
+          decoration: InputDecoration(
+            labelText: l10n.search,
+            hintText: l10n.searchHint,
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchController.text.isNotEmpty 
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    _runFilter('');
+                    FocusScope.of(context).unfocus();
+                  },
+                )
+              : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30.0),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.9),
+            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _imageContainer(String? imagePath, {double size = 40}){
@@ -223,6 +289,8 @@ class _MyHomePageState extends State<MyHomePage> {
           slivers: [
             SliverAppBar(
               backgroundColor: Colors.deepPurple,
+              floating: true, 
+              snap: true,
               title:Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -231,15 +299,34 @@ class _MyHomePageState extends State<MyHomePage> {
                 ]
               )
             ),
+            
+            _searchBarSliver(),
+
             if(_isLoading)
               const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))),
-            if (!_isLoading)
-              ..._notes.map((note) => _noteContent(note)).toList(),
-            if (!_isLoading && _notes.isEmpty)
-              SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(50), child: Text(l10n.noNotes, style: TextStyle(fontFamily: fontFamilyText,color: Colors.white, fontSize: fontDateSize))))),
+            
+            if (!_isLoading && _filteredNotes.isNotEmpty)
+              ..._filteredNotes.map((note) => _noteContent(note)).toList(),
+            
+            if (!_isLoading && _filteredNotes.isEmpty)
+              SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(50), 
+                    child: Text(
+                      _searchController.text.isEmpty 
+                          ? l10n.noNotes 
+                          : '${l10n.noResults} "${_searchController.text}"',
+                      style: TextStyle(fontFamily: fontFamilyText,color: Colors.white, fontSize: fontDateSize),
+                      textAlign: TextAlign.center,
+                    )
+                  )
+                )
+              ),
           ],
         ),
       ),
+      
       floatingActionButton: SpeedDial(
         icon: Icons.more,
         activeIcon: Icons.close,
@@ -255,13 +342,6 @@ class _MyHomePageState extends State<MyHomePage> {
             label: l10n.createNote,
             labelStyle: const TextStyle(fontWeight: FontWeight.w500),
             onTap: () => _goToEdit(),
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.search, color: Colors.white),
-            backgroundColor: Colors.blueAccent,
-            label: l10n.search,
-            labelStyle: const TextStyle(fontWeight: FontWeight.w500),
-            onTap: () => _goToSearch(),
           ),
           SpeedDialChild(
             child: const Icon(Icons.settings, color: Colors.white),
