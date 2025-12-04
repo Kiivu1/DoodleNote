@@ -280,4 +280,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stopReading => 'Stop Reading';
+
+  @override
+  String get noteTitle => 'Note Title';
+
+  @override
+  String get noteTitlePlaceholder => 'Note title placeholder';
 }

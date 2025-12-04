@@ -631,6 +631,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop Reading'**
   String get stopReading;
+
+  /// No description provided for @noteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Note Title'**
+  String get noteTitle;
+
+  /// No description provided for @noteTitlePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Note title placeholder'**
+  String get noteTitlePlaceholder;
 }
 
 class _AppLocalizationsDelegate
