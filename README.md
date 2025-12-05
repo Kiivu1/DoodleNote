@@ -1,11 +1,13 @@
 
 # DoodleNote
 
-"DoodleNote, the app where you write down on notes, the doodles of your thoughts"
+**"DoodleNote, the app where you write down on notes, the doodles of your thoughts"**
 
 DoodleNote es una aplicacion de notas, movil, la cual tiene como objetivo el poder facilitar la organizacion y la perzonalizacion de estas.
 
 Como mayor atractivo tiene el poder estructurar la nota mediante pestañas, partiendo la informacion necesaria. Aparte de eso permite la inclusion de Tags, los cuales permiten identificar las notas de manera rapida. Por ultimo tambien esta la capacidad de añadir una imagen a la nota de por si.
+
+**AVISO**: Esta aplicacion esta hecha para dispositivos Android.
 
 ## Caracteristicas y Funcionalidades
 
@@ -25,17 +27,17 @@ Como mayor atractivo tiene el poder estructurar la nota mediante pestañas, part
 
 ## Capturas de pantalla
 <p align="left">
-    <img src="assets/screenshots/4.jpg" alt="DoodleNote, Home screen" width="300"/>
-    <img src="assets/screenshots/2.jpg" alt="DoodleNote, Notes page" width= "300"/>
-    <img src="assets/screenshots/3.jpg" alt="DoodleNote, Edit screen" width="300"/>
-    <img src="assets/screenshots/1.jpg" alt="DoodleNote, Configuration screen" width="300"/>
+    <img src="assets/screenshots/4.jpg" alt="DoodleNote, Home screen" width="150"/>
+    <img src="assets/screenshots/2.jpg" alt="DoodleNote, Notes page" width= "150"/>
+    <img src="assets/screenshots/3.jpg" alt="DoodleNote, Edit screen" width="150"/>
+    <img src="assets/screenshots/1.jpg" alt="DoodleNote, Configuration screen" width="150"/>
 </p>
 
 # Pila de Tecnología
 
 Este proyecto está construido principalmente con **Flutter** y utiliza **Firebase** como su backend principal, complementado con una variedad de paquetes para una experiencia de usuario rica y funcional.
 
-## 🛠️ Dependencias Clave 
+## Dependencias Clave 
 | Tecnología | Descripción |
 | :--- | :--- |
 | **Flutter SDK** | Framework principal para el desarrollo de aplicaciones móviles, web y de escritorio. |
@@ -43,22 +45,19 @@ Este proyecto está construido principalmente con **Flutter** y utiliza **Fireba
 
 ---
 
-## 📦 Componentes y Paquetes
+## Componentes y Paquetes
 
 Los paquetes están agrupados por su funcionalidad principal para facilitar la comprensión.
 
 ### UI, Estilo y Utilidades Básicas
-
 | Paquete | Funcionalidad |
 | :--- | :--- |
-| `cupertino_icons` | Íconos de estilo iOS para la interfaz de usuario. |
 | `flutter_speed_dial` | Botón de acción flotante (FAB) con sub-opciones. |
 | `logger` | Herramienta avanzada para el logging y depuración. |
 | `flutter_lints` | Conjunto de reglas de linting para mantener la calidad del código. |
 | `flutter_localization` | Soporte para la internacionalización (i18n). |
 
 ### Backend y Servicios en la Nube
-
 | Paquete | Funcionalidad |
 | :--- | :--- |
 | **`firebase_core`** | Inicialización del SDK de Firebase. |
@@ -68,31 +67,32 @@ Los paquetes están agrupados por su funcionalidad principal para facilitar la c
 | `flutter_dotenv` | Gestión de variables de entorno (claves de API, etc.). |
 
 ### Almacenamiento Local y Estado
-
 | Paquete | Funcionalidad |
 | :--- | :--- |
-| **`provider`** | Gestión de estado para una arquitectura escalable. |
+| `provider` | Gestión de estado para una arquitectura escalable. |
 | `shared_preferences` | Almacenamiento simple de datos clave-valor localmente. |
 | `path_provider` | Localización de rutas de directorios del sistema (archivos, caché). |
 | `path` | Utilidades para trabajar con rutas de archivos y directorios. |
 
-### 🎤 Multimedia y Permisos
-
+### Multimedia y Permisos
 | Paquete | Funcionalidad |
 | :--- | :--- |
 | `image_picker` | Selector de imágenes y videos desde la galería o cámara. |
 | `permission_handler` | Manejo de permisos de la aplicación (cámara, almacenamiento, etc.). |
 | `image_gallery_saver_plus` | Guardar imágenes y videos en la galería del dispositivo. |
-| `speech_to_text` | Reconocimiento de voz (Speech-to-Text). |
-| `flutter_tts` | Texto a voz (Text-to-Speech) para lectura auditiva. |
+| **`speech_to_text`** | Reconocimiento de voz (Speech-to-Text). |
+| **`flutter_tts`** | Texto a voz (Text-to-Speech) para lectura auditiva. |
 
 ### Interacción del Sistema y Distribución
+| Paquete                            | Funcionalidad                                            |
+| :--------------------------------- | :------------------------------------------------------- |
+| `url_launcher`                     | Apertura de URLs externas (navegador, correo, teléfono). |
+| `share_plus`                       | Compartir contenido con otras aplicaciones.              |
+| `internet_connection_checker_plus` | Verificación del estado de la conexión a internet.       |
 
+### Paquetes de uso momentaneo
 | Paquete | Funcionalidad |
 | :--- | :--- |
-| `url_launcher` | Apertura de URLs externas (navegador, correo, teléfono). |
-| `share_plus` | Compartir contenido con otras aplicaciones. |
-| `internet_connection_checker_plus` | Verificación del estado de la conexión a internet. |
 | `flutter_launcher_icons` | Generación de íconos de aplicación nativos. |
 | `flutter_native_splash` | Creación de pantallas de bienvenida nativas. |
 | `change_app_package_name` | Utilidad para cambiar el nombre del paquete/ID de la aplicación. |
