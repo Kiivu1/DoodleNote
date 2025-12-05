@@ -125,7 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
           controller: _searchController,
           onChanged: (value) => _runFilter(value),
           decoration: InputDecoration(
-            labelText: l10n.search,
+            // labelText: l10n.search, // ELIMINADO: Era la causa del desplazamiento vertical
             hintText: l10n.searchHint,
             prefixIcon: const Icon(Icons.search),
             suffixIcon: _searchController.text.isNotEmpty 
@@ -144,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             filled: true,
             fillColor: Colors.white.withOpacity(0.9),
-            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20), // CORREGIDO: Añadido padding vertical para centrar el hintText
           ),
         ),
       ),
@@ -189,17 +189,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _ogNoteContent(Note note){
     return Padding(padding: const EdgeInsets.all(1),
-        child: Card( margin: EdgeInsets.all(2), color: const Color.fromARGB(255, 144, 119, 244),
-          child: ListTile(
-            onTap: () => _goToPage(note),
-            leading: imageVisible ? _imageContainer(note.imagePath) : null,
-            title: Text(note.noteTitle, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold , color: Colors.black)),
-            subtitle: Text(dateVisible ? _formatDate(note.editCreationDate) : '', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontDateSize, fontWeight: FontWeight.bold , color: Colors.black)),
-            trailing: note.isStarred 
-                ? Icon(Icons.star, color: Colors.amber, size: 28) 
-                : Icon(Icons.arrow_forward, color: const Color.fromARGB(255, 20, 1, 34))
-          ) 
-        )
+      child: Card( margin: EdgeInsets.all(2), color: const Color.fromARGB(255, 144, 119, 244),
+        child: ListTile(
+          onTap: () => _goToPage(note),
+          leading: imageVisible ? _imageContainer(note.imagePath) : null,
+          title: Text(note.noteTitle, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamilyText, fontSize: fontTitleSize, fontWeight: FontWeight.bold , color: Colors.black)),
+          subtitle: Text(dateVisible ? _formatDate(note.editCreationDate) : '', style: TextStyle(fontFamily: fontFamilyText, fontSize: fontDateSize, fontWeight: FontWeight.bold , color: Colors.black)),
+          trailing: note.isStarred 
+              ? Icon(Icons.star, color: Colors.amber, size: 28) 
+              : Icon(Icons.arrow_forward, color: const Color.fromARGB(255, 20, 1, 34))
+        ) 
+      )
     );
   }
 
@@ -267,10 +267,10 @@ class _MyHomePageState extends State<MyHomePage> {
     int typeNoteLayout = context.watch<ConfigurationData>().menuLayout;
 
     switch (typeNoteLayout) {
-      case 0: return SliverToBoxAdapter(child:  _ogNoteContent(note));
-      case 1: return SliverToBoxAdapter(child:  _gridNote(note));
-      case 2: return SliverToBoxAdapter(child:  _compactNote(note));
-      default: return SliverToBoxAdapter(child:  _ogNoteContent(note));
+      case 0: return SliverToBoxAdapter(child: 	_ogNoteContent(note));
+      case 1: return SliverToBoxAdapter(child: 	_gridNote(note));
+      case 2: return SliverToBoxAdapter(child: 	_compactNote(note));
+      default: return SliverToBoxAdapter(child: 	_ogNoteContent(note));
     }
   }
 
